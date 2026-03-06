@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#1a3a5c">
+<meta name="description" content="CCB DL Caieiras - Gestão de Estoque e Pedidos Março 2026">
+<title>CCB Caieiras · Almoxarifado</title>
+<link rel="manifest" href="data:application/json,{%22name%22:%22CCB%20Caieiras%22,%22short_name%22:%22CCB%22,%22theme_color%22:%22%231a3a5c%22,%22background_color%22:%22%23f0f4f8%22,%22display%22:%22standalone%22}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #1a3a5c;
+    --navy-mid: #2a527a;
+    --blue: #3b7fc4;
+    --sky: #64a8e0;
+    --gold: #e6a817;
+    --gold-light: #f5c842;
+    --red: #c0392b;
+    --green: #27ae60;
+    --bg: #eef2f7;
+    --card: #ffffff;
+    --text: #1a2b3c;
+    --text-muted: #607080;
+    --border: #d0dce8;
+    --shadow: 0 2px 16px rgba(26,58,92,0.10);
+    --shadow-lg: 0 8px 40px rgba(26,58,92,0.15);
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Sora', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    color: #fff;
+    padding: 0 24px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 20px rgba(26,58,92,0.35);
+  }
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px; gap: 16px;
+  }
+  .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .logo-icon {
+    width: 38px; height: 38px;
+    background: var(--gold);
+    border-radius: 10px;
+    display: grid; place-items: center;
+    font-size: 18px; font-weight: 700;
+    color: var(--navy);
+    letter-spacing: -1px;
+  }
+  .logo-text { line-height: 1.2; }
+  .logo-text strong { font-size: 15px; font-weight: 700; }
+  .logo-text small { font-size: 11px; opacity: 0.7; display: block; }
+  .header-month {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 5px 14px;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    color: var(--gold-light);
+    flex-shrink: 0;
+  }
+
+  /* ── Nav tabs ── */
+  nav {
+    background: var(--navy);
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+    overflow-x: auto; scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; gap: 4px; padding: 0 16px;
+  }
+  .tab-btn {
+    background: transparent; border: none; cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    font-family: 'Sora', sans-serif;
+    font-size: 13px; font-weight: 500;
+    padding: 14px 18px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: all 0.2s;
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: -2px;
+  }
+  .tab-btn:hover { color: rgba(255,255,255,0.9); }
+  .tab-btn.active { color: var(--gold-light); border-bottom-color: var(--gold); }
+  .tab-badge {
+    background: var(--gold);
+    color: var(--navy);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 10px; font-weight: 700;
+    min-width: 20px; text-align: center;
+  }
+
+  /* ── Main ── */
+  main {
+    max-width: 1400px; margin: 0 auto;
+    padding: 28px 24px 60px;
+  }
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── KPI Cards ── */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px; margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--blue);
+    position: relative; overflow: hidden;
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute; top: -20px; right: -20px;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: rgba(59,127,196,0.06);
+  }
+  .kpi-card.gold { border-left-color: var(--gold); }
+  .kpi-card.green { border-left-color: var(--green); }
+  .kpi-card.red { border-left-color: var(--red); }
+  .kpi-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 8px; }
+  .kpi-value { font-size: 26px; font-weight: 700; color: var(--navy); line-height: 1; }
+  .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── Section headings ── */
+  .section-title {
+    font-size: 17px; font-weight: 700; color: var(--navy);
+    margin-bottom: 16px; margin-top: 28px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::before { content: ''; width: 4px; height: 20px; background: var(--gold); border-radius: 2px; display: block; }
+
+  /* ── Search ── */
+  .search-bar {
+    position: relative; margin-bottom: 20px;
+  }
+  .search-bar input {
+    width: 100%; padding: 12px 16px 12px 44px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif;
+    font-size: 14px; color: var(--text);
+    background: var(--card);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-bar input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(59,127,196,0.12); }
+  .search-bar::before {
+    content: '🔍'; position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    font-size: 16px; pointer-events: none;
+  }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+  table {
+    width: 100%; border-collapse: collapse;
+    background: var(--card); font-size: 13px;
+  }
+  thead tr { background: var(--navy); color: #fff; }
+  thead th {
+    padding: 12px 14px; text-align: left;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid #e8edf2; transition: background 0.15s; }
+  tbody tr:hover { background: #f5f8fc; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 14px; vertical-align: middle; }
+  .td-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; text-align: right;
+  }
+  .td-bold { font-weight: 600; color: var(--navy); }
+
+  /* Badges */
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 12px; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.4px;
+    white-space: nowrap;
+  }
+  .badge-red { background: #fde8e8; color: var(--red); }
+  .badge-green { background: #e6f7ee; color: var(--green); }
+  .badge-gold { background: #fef5e0; color: #b8860b; }
+  .badge-blue { background: #e3eff8; color: var(--navy-mid); }
+  .badge-neg { background: #fff0f0; color: #c0392b; border: 1px solid #fcc; }
+
+  /* ── Congregação grid ── */
+  .congr-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  .congr-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .congr-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+  .congr-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+    color: #fff; padding: 16px 20px;
+    cursor: pointer; user-select: none;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .congr-name { font-size: 15px; font-weight: 700; }
+  .congr-addr { font-size: 11px; opacity: 0.7; margin-top: 3px; }
+  .congr-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 17px; font-weight: 700;
+    color: var(--gold-light);
+    white-space: nowrap;
+  }
+  .congr-body { padding: 0; }
+  .congr-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 20px; border-bottom: 1px solid #f0f4f8;
+    gap: 12px;
+  }
+  .congr-item:last-child { border-bottom: none; }
+  .ci-desc { font-size: 13px; color: var(--text); flex: 1; min-width: 0; }
+  .ci-desc small { display: block; font-size: 11px; color: var(--text-muted); }
+  .ci-qty {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; font-weight: 600; color: var(--navy);
+    white-space: nowrap;
+  }
+  .ci-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px; color: var(--text-muted);
+    white-space: nowrap; min-width: 70px; text-align: right;
+  }
+  .congr-empty {
+    padding: 24px 20px; text-align: center;
+    color: var(--text-muted); font-size: 13px;
+  }
+
+  /* ── Compras alert ── */
+  .alert-box {
+    background: #fff8e6;
+    border: 1.5px solid var(--gold);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .alert-box h3 { font-size: 14px; color: #8a6800; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .alert-list { display: flex; flex-wrap: wrap; gap: 8px; }
+  .alert-item {
+    background: #fff;
+    border: 1px solid #f0d060;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 12px; color: #7a5800;
+    display: flex; align-items: center; gap: 5px;
+  }
+
+  /* ── Filtros ── */
+  .filter-row {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    margin-bottom: 18px; align-items: center;
+  }
+  .filter-select {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Sora', sans-serif;
+    font-size: 13px; color: var(--text);
+    background: var(--card); outline: none; cursor: pointer;
+  }
+  .filter-select:focus { border-color: var(--blue); }
+
+  /* ── Footer ── */
+  footer {
+    text-align: center; padding: 24px;
+    font-size: 12px; color: var(--text-muted);
+    border-top: 1px solid var(--border);
+    background: var(--card);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 640px) {
+    main { padding: 16px 12px 60px; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .congr-grid { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 20px; }
+  }
+
+  /* ── Estoque status colors ── */
+  .stock-negative td:first-child { border-left: 3px solid var(--red); }
+  .stock-low td:first-child { border-left: 3px solid var(--gold); }
+  .stock-ok td:first-child { border-left: 3px solid var(--green); }
+
+  /* ── Print ── */
+  @media print {
+    header, nav, .tab-btn, .search-bar, .filter-row, footer { display: none !important; }
+    .view { display: block !important; }
+    main { padding: 0; }
+  }
+
+  /* ── Btn Edit / Action ── */
+  .btn-action {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 10px; border-radius: 6px; border: none; cursor: pointer;
+    font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 600;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .btn-action:hover { opacity: 0.85; transform: translateY(-1px); }
+  .btn-edit { background: #e3eff8; color: var(--navy-mid); }
+  .btn-pdf  { background: #e6f7ee; color: var(--green); }
+
+  /* ── Modal de Edição ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    z-index: 999; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card); border-radius: var(--radius);
+    box-shadow: var(--shadow-lg); padding: 28px 32px;
+    width: 100%; max-width: 480px;
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-title {
+    font-size: 16px; font-weight: 700; color: var(--navy);
+    margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+  }
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .modal-field input, .modal-field select, .modal-field textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: 'Sora', sans-serif;
+    font-size: 13px; color: var(--text); background: var(--bg); outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-field input:focus, .modal-field select:focus { border-color: var(--blue); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn-save { background: var(--green); color: #fff; border: none; padding: 9px 20px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-cancel-modal { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); padding: 9px 20px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  /* ── Pedidos: Nova lógica com autocomplete ── */
+  .order-section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; }
+  .order-header { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+  .order-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+  @media (max-width: 600px) { .order-fields { grid-template-columns: 1fr; } }
+  .order-field label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .order-field input, .order-field select {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-family: 'Sora', sans-serif;
+    font-size: 13px; color: var(--text); background: var(--bg); outline: none;
+    transition: border-color 0.2s;
+  }
+  .order-field input:focus, .order-field select:focus { border-color: var(--blue); }
+  .order-row {
+    display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
+  }
+  .order-row .ac-wrap { position: relative; flex: 2; min-width: 200px; }
+  .order-row .ac-list {
+    display: none; position: absolute; top: 100%; left: 0; right: 0;
+    background: var(--card); border: 1px solid var(--blue);
+    border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 300;
+    box-shadow: var(--shadow-lg);
+  }
+  .order-row .ac-list.open { display: block; }
+  .ac-item { padding: 8px 12px; cursor: pointer; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .ac-item:hover { background: var(--bg); }
+  .ac-item:last-child { border-bottom: none; }
+  .ac-sub { font-size: 10px; color: var(--text-muted); }
+  .order-qty-wrap { width: 80px; }
+  .order-qty-wrap label { display: block; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .order-qty-wrap input { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; text-align: center; background: var(--bg); outline: none; }
+  .order-row-lbl { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; display: block; }
+  .btn-add-row { background: var(--bg); border: 1.5px dashed var(--border); color: var(--text-muted); padding: 10px 18px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; transition: border-color 0.2s, color 0.2s; }
+  .btn-add-row:hover { border-color: var(--blue); color: var(--blue); }
+  .btn-del-row { background: #fde8e8; color: var(--red); border: none; padding: 9px 12px; border-radius: var(--radius-sm); cursor: pointer; font-size: 14px; align-self: flex-end; }
+  .btn-del-row:hover { background: #fcc; }
+
+  /* ── Summary Box ── */
+  .summary-box {
+    background: #f0f7ff; border: 1.5px solid var(--blue);
+    border-radius: var(--radius); padding: 20px; margin-top: 20px;
+  }
+  .sum-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 12px; }
+  .sum-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 6px; flex-wrap: wrap;
+  }
+  .sum-item-info { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .sum-qty { background: #e3eff8; color: var(--navy); border-radius: 6px; padding: 3px 10px; font-weight: 800; font-size: 14px; white-space: nowrap; }
+  .sum-desc { font-size: 13px; font-weight: 600; color: var(--navy); }
+  .sum-actions { display: flex; gap: 6px; }
+  .btn-enviar { background: var(--blue); color: #fff; border: none; padding: 10px 22px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 14px; }
+  .btn-enviar:hover { background: var(--navy-mid); }
+  .blessing-msg { text-align: center; padding: 24px; font-size: 22px; font-weight: 700; color: var(--green); }
+
+  /* ── Confirm modal ── */
+  .confirm-modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 1000; align-items: center; justify-content: center; }
+  .confirm-modal-overlay.open { display: flex; }
+  .confirm-modal-box { background: var(--card); border-radius: var(--radius); padding: 32px; max-width: 380px; width: 100%; text-align: center; box-shadow: var(--shadow-lg); animation: popIn 0.2s ease; }
+  .confirm-icon { font-size: 48px; margin-bottom: 10px; }
+  .confirm-title { font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+  .confirm-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; }
+  .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+  .btn-confirm-yes { background: var(--green); color: #fff; border: none; padding: 10px 22px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-confirm-no  { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); padding: 10px 22px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  /* ── Toast ── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff; padding: 10px 22px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 2000; box-shadow: var(--shadow-lg); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; }
+</style>
+<!-- ══ FIREBASE SDK ══ -->
+<!-- Projeto: dl-caieiras | Conta: projetosleandro98@gmail.com -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDs6JMrHDU3QQybTaYtWiM1vKlyPHR7Yvo",
+    authDomain: "dl-caieiras.firebaseapp.com",
+    projectId: "dl-caieiras",
+    storageBucket: "dl-caieiras.firebasestorage.app",
+    messagingSenderId: "620913514090",
+    appId: "1:620913514090:web:13fe946b33b35ba6ff9c13"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getFirestore(app);
+  const DOC_REF = doc(db, "almoxarifado", "dados");
+
+  // ── Salvar no Firebase ──
+  window.fbSave = async function() {
+    try {
+      await setDoc(DOC_REF, {
+        congregacoes: DATA.congregacoes,
+        estoque: DATA.estoque,
+        pedidos: DATA.pedidos,
+        atualizado: new Date().toISOString()
+      });
+      console.log("✅ Firebase: dados salvos");
+    } catch(e) {
+      console.error("❌ Firebase save error:", e);
+      showToast("⚠️ Erro ao salvar no Firebase!");
+    }
+  };
+
+  // ── Carregar do Firebase na inicialização ──
+  async function fbLoad() {
+    try {
+      const snap = await getDoc(DOC_REF);
+      if(snap.exists()) {
+        const d = snap.data();
+        if(d.congregacoes) DATA.congregacoes = d.congregacoes;
+        if(d.estoque)      DATA.estoque      = d.estoque;
+        if(d.pedidos)      DATA.pedidos      = d.pedidos;
+        IGREJAS = Object.keys(DATA.congregacoes).sort();
+        buildDashboard(); buildCongregacoes(); buildEstoque();
+        buildPedidos();   buildCompras();     buildCadastro();
+        rebuildIgrejaSelects();
+        console.log("✅ Firebase: dados carregados de", d.atualizado || "—");
+        showToast("☁️ Dados sincronizados com Firebase!");
+      } else {
+        console.log("ℹ️ Firebase: nenhum dado encontrado, usando dados locais.");
+      }
+    } catch(e) {
+      console.error("❌ Firebase load error:", e);
+      showToast("⚠️ Firebase offline — usando dados locais.");
+    }
+  }
+
+  // ── Escuta em tempo real (atualiza se outro usuário salvar) ──
+  onSnapshot(DOC_REF, (snap) => {
+    if(snap.exists() && window._fbLoaded) {
+      const d = snap.data();
+      if(d.congregacoes) DATA.congregacoes = d.congregacoes;
+      if(d.estoque)      DATA.estoque      = d.estoque;
+      if(d.pedidos)      DATA.pedidos      = d.pedidos;
+      IGREJAS = Object.keys(DATA.congregacoes).sort();
+      buildDashboard(); buildCongregacoes(); buildEstoque();
+      buildPedidos();   buildCompras();     buildCadastro();
+      rebuildIgrejaSelects();
+    }
+  });
+
+  // Aguarda DOM/scripts carregarem, depois busca dados do Firebase
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      fbLoad().then(() => { window._fbLoaded = true; });
+    }, 300);
+  });
+</script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">CCB</div>
+      <div class="logo-text">
+        <strong>Congregação Cristã no Brasil</strong>
+        <small>DL · Caieiras / SP — Almoxarifado</small>
+      </div>
+    </div>
+    <span class="header-month">📅 MARÇO 2026</span>
+
+  </div>
+</header>
+
+<nav>
+  <div class="nav-inner">
+    <button class="tab-btn active" onclick="showTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" onclick="showTab('congregacoes')">⛪ Congregações <span class="tab-badge" id="badge-congr">9</span></button>
+    <button class="tab-btn" onclick="showTab('estoque')">📦 Estoque <span class="tab-badge" id="badge-est">—</span></button>
+    <button class="tab-btn" onclick="showTab('pedidos')">📋 Pedidos</button>
+    <button class="tab-btn" onclick="showTab('compras')">🛒 Comprar <span class="tab-badge" id="badge-buy" style="background:#c0392b;color:#fff">!</span></button>
+    <button class="tab-btn" onclick="showTab('cadastro')">🏛️ Cadastro</button>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════ DASHBOARD ══════════════════════════ -->
+  <div class="view active" id="view-dashboard">
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="alert-box" id="alert-compras"></div>
+
+    <div class="section-title">Distribuição por Congregação — Março 2026</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Congregação</th>
+            <th>Endereço</th>
+            <th style="text-align:right">Itens</th>
+            <th style="text-align:right">Total (R$)</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="dash-congr-table"></tbody>
+        <tfoot>
+          <tr style="background:#f0f4f8; font-weight:700;">
+            <td colspan="2" style="padding:12px 14px;color:var(--navy)">TOTAL GERAL</td>
+            <td class="td-num td-bold" id="dash-total-items"></td>
+            <td class="td-num td-bold" style="color:var(--green)" id="dash-total-val"></td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="section-title">Top 10 Produtos Mais Distribuídos</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Unidade</th>
+            <th style="text-align:right">Qtd Total Distribuída</th>
+            <th style="text-align:right">Valor Total (R$)</th>
+            <th style="text-align:right">Nº Congregações</th>
+          </tr>
+        </thead>
+        <tbody id="top-products-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ CONGREGAÇÕES ══════════════════════════ -->
+  <!-- ══════════════════════════ CONGREGAÇÕES ══════════════════════════ -->
+  <div class="view" id="view-congregacoes">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+      <div class="section-title" style="margin:0">Pedidos por Casa de Oração</div>
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <select class="filter-select" id="filter-congr-pdf" onchange="filterCongr()" style="min-width:180px;">
+          <option value="">Todas as congregações</option>
+        </select>
+        <button class="btn-action btn-pdf" onclick="exportCongrPDF()" style="padding:8px 16px; font-size:12px;">📄 Exportar PDF</button>
+      </div>
+    </div>
+    <div class="search-bar" style="max-width:400px">
+      <input type="text" id="search-congr" placeholder="Filtrar congregação…" oninput="filterCongr()">
+    </div>
+    <div class="congr-grid" id="congr-grid"></div>
+  </div>
+
+  <!-- ══════════════════════════ ESTOQUE ══════════════════════════ -->
+  <div class="view" id="view-estoque">
+    <div class="section-title">Estoque da Distribuidora</div>
+    <div class="filter-row">
+      <div class="search-bar" style="flex:1; min-width:200px; max-width:420px; margin-bottom:0;">
+        <input type="text" id="search-est" placeholder="Buscar produto…" oninput="filterEstoque()">
+      </div>
+      <select class="filter-select" id="filter-est-status" onchange="filterEstoque()">
+        <option value="">Todos os status</option>
+        <option value="negativo">Estoque negativo</option>
+        <option value="comprar">Precisa comprar</option>
+        <option value="ok">Estoque ok</option>
+        <option value="zero">Zerado</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Un.</th>
+            <th style="text-align:right">R$ Unit.</th>
+            <th style="text-align:right">Estq. Inicial</th>
+            <th style="text-align:right">Estq. Atual</th>
+            <th style="text-align:right">Valor Atual (R$)</th>
+            <th>Obs.</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="estoque-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ PEDIDOS (nova lógica) ══════════════════════════ -->
+  <div class="view" id="view-pedidos">
+    <div class="order-section">
+      <div class="order-header">🛒 Novo Pedido</div>
+      <div class="order-fields">
+        <div class="order-field">
+          <label>Casa de Oração *</label>
+          <select id="oCasa" onchange="updateOrderSummary()">
+            <option value="">— Selecione —</option>
+          </select>
+        </div>
+        <div class="order-field">
+          <label>Responsável *</label>
+          <input type="text" id="oResp" placeholder="Nome completo" oninput="updateOrderSummary()">
+        </div>
+        <div class="order-field">
+          <label>Data do Pedido</label>
+          <input type="text" id="oData" readonly style="background:#f0f4f8;color:var(--navy);font-weight:600;">
+        </div>
+      </div>
+      <div style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Itens do Pedido</div>
+      <div id="orderItemsContainer"></div>
+      <button class="btn-add-row" onclick="addOrderRow()">+ Adicionar Item</button>
+      <div class="order-field" style="margin-top:16px;">
+        <label>Observação (opcional)</label>
+        <textarea id="oObs" rows="2" placeholder="Ex: Entregar na sexta-feira…" style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:'Sora',sans-serif; font-size:13px; resize:vertical; background:var(--bg); outline:none;"></textarea>
+      </div>
+      <div id="autoSummary" class="summary-box" style="display:none;">
+        <div class="sum-title">📋 Resumo do Pedido</div>
+        <div style="margin-bottom:12px; font-size:13px;">
+          <span style="color:var(--text-muted)">Congregação:</span> <strong id="sumCasa">—</strong>
+          &nbsp;&nbsp;
+          <span style="color:var(--text-muted)">Responsável:</span> <strong id="sumResp">—</strong>
+        </div>
+        <div id="sumItemsList"></div>
+        <div style="margin-top:14px;">
+          <button class="btn-enviar" onclick="showConfirmPedido()">📤 Enviar Pedido</button>
+        </div>
+      </div>
+      <div id="blessingMsg" style="display:none;" class="blessing-msg">
+        🙌 Deus Abençoe! Pedido registrado com sucesso!
+      </div>
+    </div>
+
+    <div class="section-title">Histórico de Pedidos — Março 2026</div>
+    <div class="filter-row">
+      <div class="search-bar" style="flex:1; min-width:200px; max-width:420px; margin-bottom:0;">
+        <input type="text" id="search-ped" placeholder="Buscar produto ou congregação…" oninput="filterPedidos()">
+      </div>
+      <select class="filter-select" id="filter-ped-congr" onchange="filterPedidos()">
+        <option value="">Todas as congregações</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Un.</th>
+            <th>Congregação</th>
+            <th>Data</th>
+            <th style="text-align:right">Qtd.</th>
+            <th style="text-align:right">R$ Unit.</th>
+            <th style="text-align:right">Total (R$)</th>
+          </tr>
+        </thead>
+        <tbody id="pedidos-table"></tbody>
+        <tfoot>
+          <tr style="background:#f0f4f8; font-weight:700;">
+            <td colspan="6" style="padding:12px 14px;color:var(--navy)">TOTAL</td>
+            <td class="td-num td-bold" style="color:var(--green)" id="ped-total"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ COMPRAS ══════════════════════════ -->
+  <div class="view" id="view-compras">
+    <div class="section-title">🛒 Itens que Precisam ser Comprados</div>
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">Produtos marcados como "COMPRAR" na planilha de estoque da distribuidora, incluindo itens com estoque negativo.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Unidade</th>
+            <th style="text-align:right">R$ Unit.</th>
+            <th style="text-align:right">Estq. Atual</th>
+            <th>Motivo</th>
+            <th>Obs.</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="compras-table"></tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════ CADASTRO ══════════════════════════ -->
+  <div class="view" id="view-cadastro">
+    <div class="section-title">🏛️ Cadastro de Casas de Oração</div>
+    <div class="order-section" style="max-width:700px;">
+      <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:14px;">➕ Nova Casa de Oração</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;margin-bottom:10px;align-items:flex-end;">
+        <div class="order-field" style="margin:0">
+          <label>Nome / Bairro (identificador)</label>
+          <input type="text" id="churchInput" placeholder="Ex: JARDIM NOVA ESPERANÇA" onkeydown="if(event.key==='Enter')addChurch()">
+        </div>
+        <button class="btn-save" onclick="addChurch()" style="white-space:nowrap;">+ Cadastrar</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px;">Após cadastrar, clique em ✏️ Editar para preencher endereço, CNPJ e demais dados.</p>
+      <div class="search-bar" style="max-width:320px;margin-bottom:16px;">
+        <input type="text" id="search-church" placeholder="Buscar casa de oração…" oninput="renderChurches()">
+      </div>
+      <div id="church-grid" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <div id="church-count" style="margin-top:12px;font-size:12px;color:var(--text-muted);"></div>
+    </div>
+  </div>
+
+  <!-- ══ MODAL EDIÇÃO IGREJA ══ -->
+  <div class="modal-overlay" id="churchEditModal">
+    <div class="modal-box" style="max-width:540px;">
+      <div class="modal-title">⛪ Editar Casa de Oração</div>
+      <input type="hidden" id="ceNomeOriginal">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div class="modal-field" style="grid-column:1/-1">
+          <label>Nome / Bairro (identificador)</label>
+          <input type="text" id="ceNome">
+        </div>
+        <div class="modal-field" style="grid-column:1/-1">
+          <label>Nome CCB completo (ex: CONGREGAÇÃO CRISTÃ NO BRASIL - BR 21-1181)</label>
+          <input type="text" id="ceNomeCCB" placeholder="CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX">
+        </div>
+        <div class="modal-field" style="grid-column:1/-1">
+          <label>Endereço (Rua, número)</label>
+          <input type="text" id="ceRua" placeholder="RUA EVA, 564">
+        </div>
+        <div class="modal-field">
+          <label>Bairro</label>
+          <input type="text" id="ceBairro" placeholder="VILA DOS PINHEIROS">
+        </div>
+        <div class="modal-field">
+          <label>CEP</label>
+          <input type="text" id="ceCep" placeholder="00000-000">
+        </div>
+        <div class="modal-field">
+          <label>CNPJ</label>
+          <input type="text" id="ceCnpj" placeholder="00000000000000">
+        </div>
+        <div class="modal-field">
+          <label>IE</label>
+          <input type="text" id="ceIe" placeholder="ISENTO">
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-cancel-modal" onclick="closeChurchModal()">Cancelar</button>
+        <button class="btn-save" onclick="saveChurchModal()">✅ Salvar</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+
+
+<script>
+// ══════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════
+const DATA = {"congregacoes": {"CENTRO": {"endereco": "AV. DR. ARMANDO PINTO, 651 - CRESCIÚMA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "AV. DR. ARMANDO PINTO, 651", "bairro": "CRESCIÚMA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "ESPERANÇA": {"endereco": "RUA PARAÍBA, 45 - JD. ESPERANÇA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA PARAÍBA, 45", "bairro": "JD. ESPERANÇA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "EUCALIPTOS": {"endereco": "RUA DAS HOTÊNCIAS, 84 - JD. EUCALIPTOS", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA DAS HOTÊNCIAS, 84", "bairro": "JD. EUCALIPTOS", "cep": "", "cnpj": "", "ie": "ISENTO"}, "LARANJEIRAS": {"endereco": "AV. PAULICÉIA, 212 - LARANJEIRAS", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "AV. PAULICÉIA, 212", "bairro": "LARANJEIRAS", "cep": "", "cnpj": "", "ie": "ISENTO"}, "MARCELINO": {"endereco": "RUA AGOSTINE DELLA TORRE, 162 - JD. MARCELINO", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA AGOSTINE DELLA TORRE, 162", "bairro": "JD. MARCELINO", "cep": "", "cnpj": "", "ie": "ISENTO"}, "PIEDADE": {"endereco": "RUA FRANCO DA ROCHA, 50 - SERPA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA FRANCO DA ROCHA, 50", "bairro": "SERPA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "PINHEIROS": {"endereco": "RUA EVA, 564 - VILA DOS PINHEIROS", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR 21-1181", "rua": "RUA EVA, 564", "bairro": "VILA DOS PINHEIROS", "cep": "07717-470", "cnpj": "29781823001589", "ie": "ISENTO"}, "SERPA": {"endereco": "RUA DR. FRANCO DA ROCHA, 49 - SERPA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA DR. FRANCO DA ROCHA, 49", "bairro": "SERPA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "VITÓRIA": {"endereco": "RUA JOAQUIM MANOEL DE MACEDO - JD. VITÓRIA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA JOAQUIM MANOEL DE MACEDO", "bairro": "JD. VITÓRIA", "cep": "", "cnpj": "", "ie": "ISENTO"}}, "estoque": [{"descricao": "AGUA MINERAL COPO 200ML C/48 UM", "unidade": "CX", "preco": 19.8, "estq_inicial": 41.0, "estq_atual": 29.0, "val_atual": 574.2, "obs": "", "comprar": false}, {"descricao": "AGUA MINERAL COPO 200ML C/48 UM", "unidade": "CX", "preco": 18.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "COPO DESCARTÁVEL 150ML C/100UNI", "unidade": "PCT", "preco": 3.54, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "COPO DESCARTÁVEL 150ML C/100UNI", "unidade": "PCT", "preco": 2.98, "estq_inicial": 241.0, "estq_atual": 55.0, "val_atual": 163.9, "obs": "COMPRAR", "comprar": true}, {"descricao": "LUVA LATEX AMARELA (P)", "unidade": "PAR", "preco": 3.02, "estq_inicial": 82.0, "estq_atual": 76.0, "val_atual": 229.52, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (M)", "unidade": "PAR", "preco": 2.59, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (M)", "unidade": "PAR", "preco": 3.5, "estq_inicial": 281.0, "estq_atual": 270.0, "val_atual": 945.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (G)", "unidade": "PAR", "preco": 2.59, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (G)", "unidade": "PAR", "preco": 2.98, "estq_inicial": 346.0, "estq_atual": 345.0, "val_atual": 1028.1, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA XG", "unidade": "PAR", "preco": 3.9, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA XG", "unidade": "PAR", "preco": 3.5, "estq_inicial": 17.0, "estq_atual": 16.0, "val_atual": 56.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 20 LTS - 100UNI", "unidade": "PC", "preco": 8.04, "estq_inicial": 42.0, "estq_atual": 42.0, "val_atual": 337.68, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 30 LTS - 100UNI", "unidade": "PC", "preco": 10.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 40 LTS - 100UNI", "unidade": "PC", "preco": 12.43, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "SACO DE LIXO PRETO - 60 LTS - 100UNI", "unidade": "PC", "preco": 18.44, "estq_inicial": 30.0, "estq_atual": 28.0, "val_atual": 516.32, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 60 LTS - 100UNI BRANCO", "unidade": "PC", "preco": 27.9, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 27.9, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 110 LTS - 50UNI", "unidade": "PC", "preco": 19.76, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 110 LTS REFORÇADO 50UNI", "unidade": "UN", "preco": 24.0, "estq_inicial": 33.0, "estq_atual": 29.0, "val_atual": 696.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 100 LTS REFORÇADO 50UNI", "unidade": "UN", "preco": 40.15, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "PÁ DE LIXO", "unidade": "UN", "preco": 19.21, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 19.21, "obs": "", "comprar": false}, {"descricao": "BALDE MOPINHO AZUL C ALCA COD. BAMOAZ", "unidade": "UN", "preco": 25.07, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 100.28, "obs": "", "comprar": false}, {"descricao": "CABO CM140 AZUL AVULSO", "unidade": "UN", "preco": 20.67, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 124.02, "obs": "", "comprar": false}, {"descricao": "CABO CM140 1,40MX 22MM MANOPLA AZUL COD. CM140", "unidade": "UN", "preco": 24.05, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "REFIL 30CM MOPINHO LIQUIDO AZUL COD.BR30AZ", "unidade": "UN", "preco": 13.16, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "REFIL 30CM MOPINHO LIQUIDO AZUL COD.BR30AZ", "unidade": "UN", "preco": 12.65, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "TOALHEIRO AUTOCORTANTE (MECÂNICO) LITB217", "unidade": "UN", "preco": 167.55, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CABO 1,40MX 22MM MANOPLA AMARELA CM140A RODO", "unidade": "UN", "preco": 21.58, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 45CM AZUL S/ CABO RB45AZ", "unidade": "UN", "preco": 22.93, "estq_inicial": 2.0, "estq_atual": 1.0, "val_atual": 22.93, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 45CM AZUL S/ CABO RB45AZ", "unidade": "UN", "preco": 21.03, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BALDE MOPINHO VERMELHO C ALCA BAMOVM", "unidade": "UN", "preco": 25.75, "estq_inicial": 8.0, "estq_atual": 8.0, "val_atual": 206.0, "obs": "", "comprar": false}, {"descricao": "CABO 1,40MX 22MM MANOPLA VERMELHA COD.CM140M", "unidade": "UN", "preco": 22.18, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "CABO 1,40MX 22MM MANOPLA VERMELHA COD.CM140M", "unidade": "UN", "preco": 22.91, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "REFIL 30CM MOPINHO LIQUIDO VERMELHO BR30VM", "unidade": "UN", "preco": 14.9, "estq_inicial": 6.0, "estq_atual": 5.0, "val_atual": 74.5, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 35CM VERMELHO S/ CABO RN35VM", "unidade": "UN", "preco": 20.09, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 40.18, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 35CM VERMELHO S/ CABO RN35VM", "unidade": "UN", "preco": 18.44, "estq_inicial": 1.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO DE LIMPEZA MOPINHO AMARELO CJ51AM", "unidade": "UN", "preco": 65.1, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA DRY 45CM - AMARELO RN45AM", "unidade": "UN", "preco": 19.21, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT VERMELHO OUTRA MARCA", "unidade": "UN", "preco": 10.72, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 21.44, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT VERMELHO", "unidade": "UN", "preco": 12.25, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 49.0, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT AZUL", "unidade": "UN", "preco": 12.62, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT AZUL", "unidade": "UN", "preco": 12.25, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 24.5, "obs": "", "comprar": false}, {"descricao": "LT EURO AMARELO", "unidade": "UN", "preco": 18.5, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO MOP PÓ PROFI 40CM CJ40P", "unidade": "UN", "preco": 73.26, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO MOP PÓ PROFI 40CM CJ40P", "unidade": "UN", "preco": 78.61, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO MOP PÓ PROFI 60CM CJ60P", "unidade": "UN", "preco": 94.37, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 188.74, "obs": "", "comprar": false}, {"descricao": "REFIL MOP PO 40 X 15CM PROFI RP400", "unidade": "UN", "preco": 18.98, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 18.98, "obs": "", "comprar": false}, {"descricao": "REFIL MOP PO 60 X 15CM PROFI RP600", "unidade": "UN", "preco": 27.08, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 27.08, "obs": "", "comprar": false}, {"descricao": "REFIL MOP PO 60 X 15CM PROFI RP600", "unidade": "UN", "preco": 30.54, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "ESPANADOR ELETROSTÁTICO ANGULAR EE60BRAZ", "unidade": "UN", "preco": 39.32, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 39.32, "obs": "", "comprar": false}, {"descricao": "ESPANADOR ELETROSTÁTICO ANGULAR EE60BRAZ(DEVOLVIDO)", "unidade": "UN", "preco": 0.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "PULVERIZADOR (BORRIFADOR) 500ML PV0500", "unidade": "UN", "preco": 7.27, "estq_inicial": 2.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "PULVERIZADOR (BORRIFADOR) 500ML PV0500", "unidade": "UN", "preco": 7.35, "estq_inicial": 12.0, "estq_atual": 12.0, "val_atual": 88.2, "obs": "", "comprar": false}, {"descricao": "PLACA SINAL COMPACTPISO MOLHADO", "unidade": "UN", "preco": 38.72, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 38.72, "obs": "", "comprar": false}, {"descricao": "TOALHEIRO AUTOCORTANTE (MECÂNICO) LITB200", "unidade": "PC", "preco": 147.9, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "DPCD DISPENSADOR DE COPOS 150 A 200ML COM DOSADOR (MECANICO)", "unidade": "UN", "preco": 31.41, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 62.82, "obs": "", "comprar": false}, {"descricao": "DPDA DISPENSER PARA DESCARTE COPO USADO 1 TUBO", "unidade": "UN", "preco": 24.36, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "DISPENSER PARA DESCARTE COPO USADO 2 TUBO", "unidade": "UN", "preco": 35.98, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 215.88, "obs": "", "comprar": false}, {"descricao": "PORTA PAPEL HIGIÊNICO ROLÃO 300 A 500 MTS (LDPR500C)", "unidade": "UN", "preco": 30.67, "estq_inicial": 5.0, "estq_atual": 5.0, "val_atual": 153.35, "obs": "", "comprar": false}, {"descricao": "SABONETEIRA ÁLCOOL COM RESERVATÓRIO DROPY", "unidade": "UN", "preco": 31.3, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 62.6, "obs": "", "comprar": false}, {"descricao": "SABONETEIRA ESPUMA COM RESERVATÓRIO LDSES850C DROPY", "unidade": "UN", "preco": 38.59, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 154.36, "obs": "", "comprar": false}, {"descricao": "CESTO 30X24 14L CINZA TAMPA BASC CS24PR", "unidade": "UN", "preco": 37.16, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 74.32, "obs": "", "comprar": false}, {"descricao": "CESTO 60 LITROS", "unidade": "UN", "preco": 60.9, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "PAPEL HIGIÊNICO ROLÃO 10X300 8 UN [FRACIONADA: 1UN]", "unidade": "UN", "preco": 8.11, "estq_inicial": 47.0, "estq_atual": -4.0, "val_atual": -32.44, "obs": "", "comprar": false}, {"descricao": "PAPEL TOALHA BOBINA 6X20X200MTS [FRACIONADA: 1 UN]", "unidade": "UN", "preco": 14.58, "estq_inicial": 58.0, "estq_atual": 11.0, "val_atual": 160.38, "obs": "", "comprar": false}, {"descricao": "FIBRA MACIA (BRANCA)", "unidade": "UN", "preco": 2.22, "estq_inicial": 14.0, "estq_atual": 14.0, "val_atual": 31.08, "obs": "", "comprar": false}, {"descricao": "FIBRA MACIA (BRANCA)", "unidade": "UN", "preco": 1.95, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FIBRA LT SERVICO PESADO 3M", "unidade": "UN", "preco": 3.49, "estq_inicial": 40.0, "estq_atual": 36.0, "val_atual": 125.64, "obs": "", "comprar": false}, {"descricao": "FIBRA LT SERVICO PESADO 3M", "unidade": "UN", "preco": 3.02, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FIBRA LT SERVICO USO GERAL 3M", "unidade": "UN", "preco": 2.12, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FLANELA 28X38 LARANJA UNID", "unidade": "UN", "preco": 1.15, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FLANELA 28X38 LARANJA UNID", "unidade": "UN", "preco": 1.08, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "SACO PANO XADREZ 40X62", "unidade": "UN", "preco": 2.51, "estq_inicial": 30.0, "estq_atual": 15.0, "val_atual": 37.65, "obs": "", "comprar": false}, {"descricao": "SABONETE SENSY HERBAL/FLORAL ESPUMA 5L [FRACIONADA: 5 LT]", "unidade": "GL", "preco": 42.3, "estq_inicial": 8.0, "estq_atual": 7.0, "val_atual": 296.1, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPA VIDRO 1L", "unidade": "LT", "preco": 20.0, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 80.0, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPA VIDRO 1L", "unidade": "LT", "preco": 17.44, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPADOR GERAL AÇAÍ CONCENTRADO 1:300 [FRAC. 5 LT]", "unidade": "GL", "preco": 76.11, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPADOR GERAL AÇAÍ CONCENTRADO 1:300 [FRAC. 5 LT]", "unidade": "GL", "preco": 87.44, "estq_inicial": 5.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "KLYO FLOOR LIMPADOR PESADA RENKO [FRACIONADA: 5 LT]", "unidade": "LT", "preco": 21.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "MIRAX DESINFETANTE ALTA DILUIÇAO 1:300 M(FRAC.ML)", "unidade": "LT", "preco": 18.3, "estq_inicial": 19.0, "estq_atual": 16.0, "val_atual": 292.8, "obs": "", "comprar": false}, {"descricao": "MIRAX DESINFETANTE ALTA DILUIÇAO 1:300 M(FRAC.ML)", "unidade": "LT", "preco": 16.3, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "ALCOOL GEL 70º 5 L(MÍNIMO 5 LITROS)", "unidade": "GL", "preco": 37.69, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 37.69, "obs": "COMPRAR", "comprar": true}, {"descricao": "ÁLCOOL LÍQUIDO 70º INPM 1LT", "unidade": "LT", "preco": 7.0, "estq_inicial": 41.0, "estq_atual": 40.0, "val_atual": 280.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 35", "unidade": "PAR", "preco": 93.5, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 36", "unidade": "PAR", "preco": 82.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 37", "unidade": "PAR", "preco": 82.0, "estq_inicial": -1.0, "estq_atual": -1.0, "val_atual": -82.0, "obs": "LARANJEIRAS", "comprar": false}, {"descricao": "BOTAS BRANCAS 38", "unidade": "PAR", "preco": 81.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 39", "unidade": "PAR", "preco": 80.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 40", "unidade": "PAR", "preco": 93.5, "estq_inicial": -2.0, "estq_atual": -3.0, "val_atual": -280.5, "obs": "1 SERPA", "comprar": false}, {"descricao": "BOTAS BRANCAS 41", "unidade": "PAR", "preco": 93.5, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 44 (43)", "unidade": "PAR", "preco": 82.0, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 164.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS RETORNADA DE CASAS DE ORAÇÃO", "unidade": "PAR", "preco": 0.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 35, 36, 37, 38, 39", "unidade": "PAR", "preco": 0.0, "estq_inicial": 3.0, "estq_atual": 3.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SAPATO BRANCO 42 E 35", "unidade": "PAR", "preco": 0.0, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "GATILHO", "unidade": "UN", "preco": 4.27, "estq_inicial": 11.0, "estq_atual": 11.0, "val_atual": 46.97, "obs": "", "comprar": false}, {"descricao": "P0NTEIRA", "unidade": "UN", "preco": 5.83, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "OCULOS DE SEGURANÇA", "unidade": "UN", "preco": 8.4, "estq_inicial": 0.0, "estq_atual": -2.0, "val_atual": -16.8, "obs": "COMPRAR", "comprar": true}, {"descricao": "TELA ODORIZADORA", "unidade": "UN", "preco": 3.59, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "TELA ODORIZADORA", "unidade": "UN", "preco": 4.8, "estq_inicial": 25.0, "estq_atual": 21.0, "val_atual": 100.8, "obs": "", "comprar": false}, {"descricao": "VALVULA LIQUIDA", "unidade": "UN", "preco": 2.9, "estq_inicial": 7.0, "estq_atual": 7.0, "val_atual": 20.3, "obs": "", "comprar": false}, {"descricao": "VALVULA ESPUMA", "unidade": "UN", "preco": 11.12, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 44.48, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA P", "unidade": "PAR", "preco": 8.5, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 34.0, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA M", "unidade": "PAR", "preco": 8.6, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA M", "unidade": "PAR", "preco": 8.5, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 34.0, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA G", "unidade": "PAR", "preco": 8.5, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 34.0, "obs": "", "comprar": false}, {"descricao": "MASCARA DESC. C/50", "unidade": "PC", "preco": 10.2, "estq_inicial": 5.0, "estq_atual": 5.0, "val_atual": 51.0, "obs": "", "comprar": false}, {"descricao": "MASCARA DESC. C/100", "unidade": "PC", "preco": 13.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "TUBO PORTA COPO", "unidade": "UN", "preco": 5.61, "estq_inicial": 5.0, "estq_atual": 5.0, "val_atual": 28.05, "obs": "", "comprar": false}, {"descricao": "COPO MEDIDA", "unidade": "UN", "preco": 4.17, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 8.34, "obs": "", "comprar": false}, {"descricao": "ESCOVA SANITÁRIA", "unidade": "UN", "preco": 14.8, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 88.8, "obs": "", "comprar": false}, {"descricao": "VASSOURA", "unidade": "UN", "preco": 10.29, "estq_inicial": 1.0, "estq_atual": -3.0, "val_atual": -30.87, "obs": "COMPRAR", "comprar": true}, {"descricao": "CABO CE140", "unidade": "UN", "preco": 24.49, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 146.94, "obs": "", "comprar": false}, {"descricao": "CABO CE140M", "unidade": "UN", "preco": 24.49, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CABO CL140", "unidade": "UN", "preco": 23.94, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 23.94, "obs": "", "comprar": false}, {"descricao": "CABO CL140E", "unidade": "UN", "preco": 23.94, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 23.94, "obs": "", "comprar": false}, {"descricao": "COMB35", "unidade": "UN", "preco": 48.18, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "COMB35", "unidade": "UN", "preco": 54.47, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 108.94, "obs": "", "comprar": false}, {"descricao": "TAMPA DE LIXO", "unidade": "UN", "preco": 9.84, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "ESPREMEDOR PARA BALDE MOPINHO", "unidade": "UN", "preco": 11.33, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 67.98, "obs": "", "comprar": false}, {"descricao": "AVENTAL", "unidade": "UN", "preco": 14.0, "estq_inicial": 7.0, "estq_atual": 7.0, "val_atual": 98.0, "obs": "", "comprar": false}, {"descricao": "EXTENSOR 9 METROS", "unidade": "UN", "preco": 206.6, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "AVENTAL E.B.I", "unidade": "UN", "preco": 15.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "RODO TWITER", "unidade": "UN", "preco": 72.94, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CESTO23L BRANCO", "unidade": "UN", "preco": 51.78, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 51.78, "obs": "", "comprar": false}, {"descricao": "SUPORTE PARA RODOS E VASSOURAS", "unidade": "UN", "preco": 0, "estq_inicial": 0, "estq_atual": -2.0, "val_atual": 0, "obs": "COMPRAR", "comprar": true}, {"descricao": "MOP PÓ PAREDE", "unidade": "UN", "preco": 0, "estq_inicial": 0, "estq_atual": -2.0, "val_atual": 0, "obs": "COMPRAR", "comprar": true}], "pedidos": []};
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+const R$ = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+const N  = v => Number(v).toLocaleString('pt-BR');
+const fmtDate = d => d.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'});
+
+// Lista centralizada de igrejas
+let IGREJAS = Object.keys(DATA.congregacoes).sort();
+
+function rebuildIgrejaSelects() {
+  const oCasa = document.getElementById('oCasa');
+  const curVal = oCasa ? oCasa.value : '';
+  if(oCasa) {
+    oCasa.innerHTML = '<option value="">— Selecione —</option>' +
+      IGREJAS.map(n => `<option value="${n}"${n===curVal?' selected':''}>${n}</option>`).join('');
+  }
+  const fPdf = document.getElementById('filter-congr-pdf');
+  if(fPdf) {
+    const cur = fPdf.value;
+    fPdf.innerHTML = '<option value="">Todas as congregações</option>' +
+      IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+  }
+  const fPed = document.getElementById('filter-ped-congr');
+  if(fPed) {
+    const cur = fPed.value;
+    fPed.innerHTML = '<option value="">Todas as congregações</option>' +
+      IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+  }
+}
+
+function showTab(id) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toastMsg');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════
+// MODAL DE EDIÇÃO GENÉRICO
+// ══════════════════════════════════════════════
+let _editCallback = null;
+
+function openEditModal(title, fields, onSave) {
+  document.getElementById('editModalTitle').textContent = title;
+  const body = document.getElementById('editModalBody');
+  body.innerHTML = fields.map(f => {
+    const id = 'ef_' + f.key;
+    if(f.type === 'select') {
+      const opts = f.options.map(o => `<option value="${o.v}"${o.v==f.value?' selected':''}>${o.l}</option>`).join('');
+      return `<div class="modal-field"><label>${f.label}</label><select id="${id}">${opts}</select></div>`;
+    }
+    return `<div class="modal-field"><label>${f.label}</label><input type="${f.type||'text'}" id="${id}" value="${f.value||''}" ${f.step?'step="'+f.step+'"':''}/></div>`;
+  }).join('');
+  _editCallback = onSave;
+  document.getElementById('editModal').classList.add('open');
+  const first = body.querySelector('input,select');
+  if(first) { first.focus(); if(first.select) first.select(); }
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  _editCallback = null;
+}
+
+function saveEditModal() {
+  if(!_editCallback) return;
+  const data = {};
+  document.getElementById('editModalBody').querySelectorAll('[id^="ef_"]').forEach(el => {
+    data[el.id.replace('ef_','')] = el.type === 'number' ? Number(el.value) : el.value;
+  });
+  _editCallback(data);
+  closeEditModal();
+}
+
+// ══════════════════════════════════════════════
+// CADASTRO DE IGREJAS
+// ══════════════════════════════════════════════
+function buildCadastro() { renderChurches(); }
+
+function openChurchModal(nome) {
+  const c = DATA.congregacoes[nome] || {};
+  document.getElementById('ceNomeOriginal').value = nome;
+  document.getElementById('ceNome').value      = nome;
+  document.getElementById('ceNomeCCB').value   = c.nome_ccb  || 'CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX';
+  document.getElementById('ceRua').value       = c.rua       || '';
+  document.getElementById('ceBairro').value    = c.bairro    || '';
+  document.getElementById('ceCep').value       = c.cep       || '';
+  document.getElementById('ceCnpj').value      = c.cnpj      || '';
+  document.getElementById('ceIe').value        = c.ie        || 'ISENTO';
+  document.getElementById('churchEditModal').classList.add('open');
+}
+
+function closeChurchModal() {
+  document.getElementById('churchEditModal').classList.remove('open');
+}
+
+function saveChurchModal() {
+  const original = document.getElementById('ceNomeOriginal').value;
+  const novoNome = document.getElementById('ceNome').value.trim().toUpperCase();
+  if(!novoNome) { showToast('⚠️ O nome não pode ficar vazio!'); return; }
+
+  const dados = {
+    nome_ccb: document.getElementById('ceNomeCCB').value.trim().toUpperCase(),
+    rua:      document.getElementById('ceRua').value.trim().toUpperCase(),
+    bairro:   document.getElementById('ceBairro').value.trim().toUpperCase(),
+    cep:      document.getElementById('ceCep').value.trim(),
+    cnpj:     document.getElementById('ceCnpj').value.trim(),
+    ie:       document.getElementById('ceIe').value.trim().toUpperCase(),
+  };
+  dados.endereco = dados.rua + (dados.bairro ? ' - ' + dados.bairro : '');
+
+  // Renomear se o nome mudou
+  if(novoNome !== original) {
+    if(IGREJAS.includes(novoNome)) { showToast('⚠️ Já existe uma igreja com esse nome!'); return; }
+    const old = DATA.congregacoes[original] || {};
+    DATA.congregacoes[novoNome] = Object.assign({}, old, dados);
+    delete DATA.congregacoes[original];
+    IGREJAS = IGREJAS.map(n => n === original ? novoNome : n).sort();
+  } else {
+    if(!DATA.congregacoes[novoNome]) DATA.congregacoes[novoNome] = { items:[], total_geral:0 };
+    Object.assign(DATA.congregacoes[novoNome], dados);
+  }
+
+  closeChurchModal();
+  renderChurches(); rebuildIgrejaSelects(); buildCongregacoes();
+  showToast('✅ Dados salvos com sucesso!');
+  if(window.fbSave) window.fbSave();
+}
+
+function addChurch() {
+  const inp = document.getElementById('churchInput');
+  const nome = inp.value.trim().toUpperCase();
+  if(!nome) { showToast('⚠️ Digite o nome da casa de oração!'); return; }
+  if(IGREJAS.includes(nome)) { showToast('⚠️ Já cadastrada!'); return; }
+  IGREJAS.push(nome); IGREJAS.sort();
+  if(!DATA.congregacoes[nome]) DATA.congregacoes[nome] = { endereco:'', items:[], total_geral:0 };
+  inp.value = '';
+  renderChurches(); rebuildIgrejaSelects(); buildCongregacoes();
+  document.getElementById('badge-congr').textContent = IGREJAS.length;
+  showToast('✅ Casa de Oração cadastrada!');
+  if(window.fbSave) window.fbSave();
+}
+
+function removeChurch(nome) {
+  if(!confirm('Remover "' + nome + '"? Pedidos no histórico serão mantidos.')) return;
+  IGREJAS = IGREJAS.filter(n => n !== nome);
+  delete DATA.congregacoes[nome];
+  renderChurches(); rebuildIgrejaSelects(); buildCongregacoes();
+  document.getElementById('badge-congr').textContent = IGREJAS.length;
+  showToast('🗑️ Casa de Oração removida.');
+  if(window.fbSave) window.fbSave();
+}
+
+function renderChurches() {
+  const q = (document.getElementById('search-church')?.value || '').toLowerCase();
+  const lista = IGREJAS.filter(n => n.toLowerCase().includes(q));
+  const grid = document.getElementById('church-grid');
+  if(!grid) return;
+  grid.innerHTML = lista.map(nome =>
+    '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+    '<span style="font-size:13px;font-weight:600;color:var(--navy);">⛪ ' + nome + '</span>' +
+    '<div style="display:flex;gap:6px;">' +
+    '<button class="btn-action btn-edit" style="font-size:11px;padding:3px 10px;" onclick="openChurchModal(\'' + nome.replace(/'/g,"\\'") + '\')">✏️ Editar</button>' +
+    '<button class="btn-action" style="background:#fde8e8;color:var(--red);font-size:11px;padding:3px 8px;" onclick="removeChurch(\'' + nome.replace(/'/g,"\\'") + '\')">✕</button>' +
+    '</div>' +
+    '</div>'
+  ).join('');
+  const cnt = document.getElementById('church-count');
+  if(cnt) cnt.textContent = lista.length + ' casa(s) cadastrada(s)';
+}
+
+// ══════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════
+function buildDashboard() {
+  const congrs = DATA.congregacoes;
+  const names = Object.keys(congrs);
+  const totalDistrib = names.reduce((s, n) => s + congrs[n].total_geral, 0);
+  const needBuy = DATA.estoque.filter(e => e.comprar || e.estq_atual < 0).length;
+  const estoqueVal = DATA.estoque.reduce((s, e) => s + Math.max(0, e.val_atual), 0);
+  const congrAtivas = names.filter(n => congrs[n].items.length > 0).length;
+
+  document.getElementById('kpi-row').innerHTML =
+    '<div class="kpi-card"><div class="kpi-label">Total Distribuído</div><div class="kpi-value">' + R$(totalDistrib) + '</div><div class="kpi-sub">Mês atual</div></div>' +
+    '<div class="kpi-card gold"><div class="kpi-label">Congregações Ativas</div><div class="kpi-value">' + congrAtivas + ' / ' + names.length + '</div><div class="kpi-sub">com pedidos registrados</div></div>' +
+    '<div class="kpi-card green"><div class="kpi-label">Valor em Estoque</div><div class="kpi-value">' + R$(estoqueVal) + '</div><div class="kpi-sub">' + DATA.estoque.filter(e=>e.estq_atual>0).length + ' itens disponíveis</div></div>' +
+    '<div class="kpi-card red"><div class="kpi-label">Itens p/ Comprar</div><div class="kpi-value">' + needBuy + '</div><div class="kpi-sub">marcados na planilha</div></div>';
+
+  const buyItems = DATA.estoque.filter(e => e.comprar || e.estq_atual < 0);
+  const uniqueBuy = [...new Set(buyItems.map(e => e.descricao))];
+  document.getElementById('alert-compras').innerHTML = uniqueBuy.length
+    ? '<h3>⚠️ ' + uniqueBuy.length + ' itens precisam de reposição</h3><div class="alert-list">' + uniqueBuy.map(d => '<div class="alert-item">📦 ' + d + '</div>').join('') + '</div>'
+    : '<h3 style="color:var(--green)">✅ Estoque em dia — nenhum item crítico</h3>';
+
+  let rows = '', ti = 0, tv = 0;
+  names.sort((a,b) => congrs[b].total_geral - congrs[a].total_geral).forEach(n => {
+    const c = congrs[n], cnt = c.items.length, tot = c.total_geral;
+    ti += cnt; tv += tot;
+    rows += '<tr><td class="td-bold">⛪ ' + n + '</td><td style="font-size:12px;color:var(--text-muted)">' + (c.endereco||'') + '</td><td class="td-num">' + cnt + '</td><td class="td-num td-bold">' + R$(tot) + '</td><td>' + (cnt > 0 ? '<span class="badge badge-green">Distribuído</span>' : '<span class="badge badge-blue">Sem pedido</span>') + '</td></tr>';
+  });
+  document.getElementById('dash-congr-table').innerHTML = rows;
+  document.getElementById('dash-total-items').textContent = ti;
+  document.getElementById('dash-total-val').textContent = R$(tv);
+
+  const prodMap = {};
+  names.forEach(n => {
+    congrs[n].items.forEach(it => {
+      if(!prodMap[it.descricao]) prodMap[it.descricao] = { unidade:it.unidade, qtd:0, val:0, congrs:new Set() };
+      prodMap[it.descricao].qtd += it.saida;
+      prodMap[it.descricao].val += it.total;
+      prodMap[it.descricao].congrs.add(n);
+    });
+  });
+  const sorted = Object.entries(prodMap).sort((a,b) => b[1].qtd - a[1].qtd).slice(0,10);
+  document.getElementById('top-products-table').innerHTML = sorted.map(([desc, v], i) =>
+    '<tr><td>' + (i===0?'🥇':i===1?'🥈':i===2?'🥉':'  ') + ' <span class="td-bold">' + desc + '</span></td><td><span class="badge badge-blue">' + v.unidade + '</span></td><td class="td-num td-bold">' + N(v.qtd) + '</td><td class="td-num">' + R$(v.val) + '</td><td class="td-num">' + v.congrs.size + '</td></tr>'
+  ).join('');
+}
+
+// ══════════════════════════════════════════════
+// CONGREGAÇÕES
+// ══════════════════════════════════════════════
+function buildCongregacoes() {
+  document.getElementById('badge-congr').textContent = IGREJAS.length;
+  rebuildIgrejaSelects();
+  filterCongr();
+}
+
+function renderCongr(entries) {
+  document.getElementById('congr-grid').innerHTML = entries.map(function(entry) {
+    const name = entry[0], c = entry[1];
+    const itemsHtml = c.items.length === 0
+      ? '<div class="congr-empty">Nenhum pedido registrado este mês</div>'
+      : c.items.map(it => '<div class="congr-item"><div class="ci-desc">' + it.descricao + '<small>' + it.unidade + ' · ' + R$(it.preco) + '/un</small></div><div class="ci-qty">' + N(it.saida) + ' ' + it.unidade + '</div><div class="ci-val">' + R$(it.total) + '</div></div>').join('');
+    return '<div class="congr-card"><div class="congr-header"><div><div class="congr-name">⛪ ' + name + '</div><div class="congr-addr">' + (c.endereco||'') + '</div></div><div class="congr-total">' + R$(c.total_geral) + '</div></div><div class="congr-body">' + itemsHtml + '</div></div>';
+  }).join('');
+}
+
+function filterCongr() {
+  const q    = (document.getElementById('search-congr')?.value || '').toLowerCase();
+  const filt = document.getElementById('filter-congr-pdf')?.value || '';
+  let entries = Object.entries(DATA.congregacoes);
+  if(filt) entries = entries.filter(e => e[0] === filt);
+  else if(q) entries = entries.filter(e => e[0].toLowerCase().includes(q));
+  renderCongr(entries);
+}
+
+function exportCongrPDF() {
+  const filt = document.getElementById('filter-congr-pdf')?.value || '';
+  let entries = Object.entries(DATA.congregacoes);
+  if(filt) entries = entries.filter(e => e[0] === filt);
+  if(!entries.length) { showToast('⚠️ Nenhuma congregação selecionada!'); return; }
+
+  const hoje = fmtDate(new Date());
+
+  // CSS declaração de trânsito
+  var css = [
+    'body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:0;padding:0;}',
+    '@page{size:A4;margin:18mm 14mm;}',
+    '.declaracao{width:100%;border-collapse:collapse;margin-bottom:28px;page-break-inside:avoid;}',
+    '.declaracao td,.declaracao th{border:1px solid #555;padding:5px 8px;vertical-align:top;}',
+    '.declaracao .hdr{text-align:center;font-weight:bold;font-size:12px;background:#f5f5f5;border:1px solid #555;padding:5px 8px;}',
+    '.declaracao .lbl{font-weight:bold;white-space:nowrap;}',
+    '.bairro-destaque{font-weight:900;font-size:13px;text-align:right;}',
+    '.itens-table{width:100%;border-collapse:collapse;margin-top:6px;}',
+    '.itens-table th{background:#eee;padding:4px 6px;font-size:11px;text-align:left;border:1px solid #bbb;}',
+    '.itens-table td{padding:4px 6px;font-size:11px;border:1px solid #bbb;}',
+    '.itens-table td.r{text-align:right;}',
+    '.assinatura{margin-top:18px;display:flex;gap:60px;}',
+    '.assinatura .campo{flex:1;}',
+    '.assinatura .linha{border-top:1px solid #555;margin-top:28px;padding-top:4px;font-size:11px;text-align:center;}',
+    '.page-break{page-break-after:always;}',
+    'p{margin:0;}'
+  ].join('');
+
+  var pages = '';
+  entries.forEach(function(entry, idx) {
+    var name = entry[0], c = entry[1];
+    var nomeCCB = c.nome_ccb || 'CONGREGAÇÃO CRISTÃ NO BRASIL';
+    var rua     = c.rua     || c.endereco || '';
+    var bairro  = c.bairro  || '';
+    var cep     = c.cep     || '';
+    var cnpj    = c.cnpj    || '';
+    var ie      = c.ie      || 'ISENTO';
+    var totalFmt = 'R$ ' + Number(c.total_geral).toFixed(2).replace('.',',');
+
+    // Linha de itens
+    var itensHtml = '';
+    if(c.items.length > 0) {
+      itensHtml += '<tr><th colspan="5" style="text-align:center;background:#ddd;">PRODUTOS DISTRIBUÍDOS</th></tr>';
+      itensHtml += '<tr><th>Descrição</th><th>Un.</th><th class="r">Qtd.</th><th class="r">R$ Unit.</th><th class="r">Total (R$)</th></tr>';
+      c.items.forEach(function(it) {
+        itensHtml += '<tr><td>' + it.descricao + '</td><td>' + it.unidade + '</td><td class="r">' + it.saida + '</td><td class="r">R$ ' + Number(it.preco).toFixed(2).replace('.',',') + '</td><td class="r">R$ ' + Number(it.total).toFixed(2).replace('.',',') + '</td></tr>';
+      });
+      itensHtml += '<tr><td colspan="4" style="text-align:right;font-weight:bold;background:#f5f5f5;">TOTAL</td><td class="r" style="font-weight:bold;background:#f5f5f5;">' + totalFmt + '</td></tr>';
+    } else {
+      itensHtml = '<tr><td colspan="5" style="text-align:center;color:#888;padding:10px;">Nenhum produto registrado</td></tr>';
+    }
+
+    var decl =
+      '<table class="declaracao">' +
+        '<tr><td class="hdr" colspan="2">Declaração de Trânsito</td></tr>' +
+        '<tr><td class="hdr" colspan="2">CONGREGAÇÃO CRISTÃ NO BRASIL DL - CAIEIRAS</td></tr>' +
+        '<tr><td class="hdr" colspan="2">DISTRIBUIÇÃO DE PRODUTOS P/ CASA DE ORAÇÃO (SUPRIR ALMOXARIFADO)</td></tr>' +
+        '<tr><td class="hdr" colspan="2">Destinatário</td></tr>' +
+        '<tr><td class="lbl">Nome</td><td>' + nomeCCB + '</td></tr>' +
+        '<tr><td class="lbl">Endereço</td><td>' + rua + ' CAIEIRAS/SP</td></tr>' +
+        '<tr><td class="lbl">Bairro</td><td style="display:flex;justify-content:space-between;align-items:center;">' +
+          bairro + (cep ? '  CEP ' + cep : '') +
+          '<span class="bairro-destaque">' + name + '</span>' +
+        '</td></tr>' +
+        '<tr><td class="lbl">CNPJ</td><td>' + (cnpj || '________________') + '  IE ' + ie + '</td></tr>' +
+        '<tr><td colspan="2"><table class="itens-table">' + itensHtml + '</table></td></tr>' +
+        '<tr><td colspan="2">' +
+          '<div class="assinatura">' +
+            '<div class="campo"><div class="linha">DATA</div></div>' +
+            '<div class="campo"><div class="linha">ASSINATURA</div></div>' +
+          '</div>' +
+        '</td></tr>' +
+      '</table>';
+
+    var isLast = idx === entries.length - 1;
+    pages += '<div' + (isLast ? '' : ' class="page-break"') + '>' + decl + '</div>';
+  });
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Declaracao Transito CCB Caieiras ' + hoje + '</title><style>' + css + '</style></head><body>' + pages + '</body></html>';
+
+  var w = window.open('', '_blank');
+  if(!w) { showToast('⚠️ Permita pop-ups para exportar PDF'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(function(){ w.print(); }, 700);
+}
+
+// ══════════════════════════════════════════════
+// ESTOQUE
+// ══════════════════════════════════════════════
+function buildEstoque() {
+  document.getElementById('badge-est').textContent = DATA.estoque.length;
+  renderEstoque(DATA.estoque);
+}
+
+function renderEstoque(items) {
+  document.getElementById('estoque-table').innerHTML = items.map(function(e) {
+    const neg = e.estq_atual < 0, low = e.comprar;
+    const cls = neg ? 'stock-negative' : (low ? 'stock-low' : (e.estq_atual > 0 ? 'stock-ok' : ''));
+    const badge = neg ? '<span class="badge badge-neg">⚠ Negativo</span>'
+                : low ? '<span class="badge badge-gold">Comprar</span>'
+                : e.estq_atual > 0 ? '<span class="badge badge-green">OK</span>'
+                : '<span class="badge">Zerado</span>';
+    const realIdx = DATA.estoque.indexOf(e);
+    return '<tr class="' + cls + '"><td class="td-bold">' + e.descricao + '</td><td><span class="badge badge-blue">' + e.unidade + '</span></td><td class="td-num">' + (e.preco > 0 ? R$(e.preco) : '—') + '</td><td class="td-num">' + N(e.estq_inicial) + '</td><td class="td-num" style="' + (neg?'color:var(--red);font-weight:700':'') + '">' + N(e.estq_atual) + '</td><td class="td-num" style="' + (e.val_atual < 0?'color:var(--red)':'') + '">' + (e.val_atual !== 0 ? R$(e.val_atual) : '—') + '</td><td>' + badge + (e.obs && e.obs !== 'COMPRAR' ? ' <small style="color:var(--text-muted)">' + e.obs + '</small>' : '') + '</td><td><button class="btn-action btn-edit" onclick="editEstoque(' + realIdx + ')">✏️ Editar</button></td></tr>';
+  }).join('');
+}
+
+function editEstoque(idx) {
+  const e = DATA.estoque[idx];
+  openEditModal('✏️ Editar — ' + e.descricao, [
+    { key:'descricao', label:'Descrição', value:e.descricao },
+    { key:'unidade',   label:'Unidade',   value:e.unidade },
+    { key:'preco',     label:'Preço Unitário (R$)', type:'number', step:'0.01', value:e.preco },
+    { key:'estq_inicial', label:'Estoque Inicial', type:'number', value:e.estq_inicial },
+    { key:'estq_atual',   label:'Estoque Atual',   type:'number', value:e.estq_atual },
+    { key:'obs', label:'Observação', value:e.obs||'' },
+    { key:'comprar', label:'Precisa Comprar?', type:'select', value:String(e.comprar),
+      options:[{v:'false',l:'Não'},{v:'true',l:'Sim'}] }
+  ], function(data) {
+    Object.assign(DATA.estoque[idx], {
+      descricao:data.descricao, unidade:data.unidade, preco:data.preco,
+      estq_inicial:data.estq_inicial, estq_atual:data.estq_atual,
+      val_atual:data.preco * data.estq_atual, obs:data.obs,
+      comprar: data.comprar === 'true'
+    });
+    filterEstoque(); buildCompras(); buildDashboard();
+    if(window.fbSave) window.fbSave();
+    showToast('✅ Item atualizado!');
+  });
+}
+
+function filterEstoque() {
+  const q  = document.getElementById('search-est').value.toLowerCase();
+  const st = document.getElementById('filter-est-status').value;
+  let items = DATA.estoque.filter(e => e.descricao.toLowerCase().includes(q));
+  if (st === 'negativo') items = items.filter(e => e.estq_atual < 0);
+  else if (st === 'comprar') items = items.filter(e => e.comprar);
+  else if (st === 'ok')      items = items.filter(e => e.estq_atual > 0 && !e.comprar);
+  else if (st === 'zero')    items = items.filter(e => e.estq_atual === 0);
+  renderEstoque(items);
+}
+
+// ══════════════════════════════════════════════
+// PEDIDOS
+// ══════════════════════════════════════════════
+let orderRows = [];
+let _genId = 0;
+const genId = () => 'r' + (++_genId);
+
+function buildPedidos() {
+  rebuildIgrejaSelects();
+  const oData = document.getElementById('oData');
+  if(oData) oData.value = fmtDate(new Date());
+  addOrderRow();
+  renderPedidos(DATA.pedidos);
+}
+
+function addOrderRow() {
+  const id = genId();
+  orderRows.push({ id, descricao:'', unidade:'', preco:0, quantidade:1, selecionado:false });
+  renderOrderRows();
+}
+
+function renderOrderRows() {
+  const cont = document.getElementById('orderItemsContainer');
+  orderRows.forEach(function(row, i) {
+    if(!document.getElementById('orow_' + row.id)) {
+      const div = document.createElement('div');
+      div.className = 'order-row'; div.id = 'orow_' + row.id;
+      div.innerHTML =
+        '<div class="ac-wrap">' +
+          '<label class="order-row-lbl" id="orow_lbl_' + row.id + '">Item ' + (i+1) + '</label>' +
+          '<input type="text" id="ac_input_' + row.id + '" placeholder="Digite para buscar produto…" autocomplete="off" spellcheck="false"/>' +
+          '<div class="ac-list" id="ac_list_' + row.id + '"></div>' +
+          '<div id="ac_sub_' + row.id + '" style="font-size:11px;color:var(--text-muted);margin-top:3px;min-height:14px"></div>' +
+        '</div>' +
+        '<div class="order-qty-wrap"><label>Qtd.</label><input type="number" min="1" id="ac_qty_' + row.id + '" value="' + row.quantidade + '"/></div>' +
+        '<button class="btn-del-row" id="ac_del_' + row.id + '" style="display:none" onclick="removeOrderRow(\'' + row.id + '\')">✕</button>';
+      cont.appendChild(div);
+      const inp = div.querySelector('input[type=text]');
+      inp.addEventListener('input', function(){ filterOrderAC(row.id, this.value); });
+      inp.addEventListener('focus', function(){ filterOrderAC(row.id, this.value); });
+      inp.addEventListener('blur',  function(){ setTimeout(function(){ closeOrderAC(row.id); }, 200); });
+      div.querySelector('input[type=number]').addEventListener('change', function(){ setOrderRowQty(row.id, this.value); });
+    }
+    const lbl = document.getElementById('orow_lbl_' + row.id);
+    if(lbl) lbl.textContent = 'Item ' + (i+1);
+    const sub = document.getElementById('ac_sub_' + row.id);
+    if(sub) sub.textContent = row.selecionado ? row.unidade + (row.preco > 0 ? ' · ' + R$(row.preco) + '/un' : '') : '';
+    const qtyEl = document.getElementById('ac_qty_' + row.id);
+    if(qtyEl && document.activeElement !== qtyEl) qtyEl.value = row.quantidade;
+    const delBtn = document.getElementById('ac_del_' + row.id);
+    if(delBtn) delBtn.style.display = orderRows.length > 1 ? '' : 'none';
+  });
+  Array.from(cont.children).forEach(function(child) {
+    const id = child.id.replace('orow_','');
+    if(!orderRows.some(r => r.id === id)) cont.removeChild(child);
+  });
+  updateOrderSummary();
+}
+
+function filterOrderAC(rowId, val) {
+  const row = orderRows.find(r => r.id === rowId);
+  if(row){ row.descricao = val; row.selecionado = false; }
+  const list = document.getElementById('ac_list_' + rowId);
+  if(!list) return;
+  const q = val.trim().toLowerCase();
+  const seen = new Set();
+  const allProds = DATA.estoque.filter(e => { if(seen.has(e.descricao)) return false; seen.add(e.descricao); return true; });
+  const matches = q ? allProds.filter(d => d.descricao.toLowerCase().includes(q)).slice(0,14) : allProds.slice(0,14);
+  if(!matches.length){ list.classList.remove('open'); updateOrderSummary(); return; }
+  list.innerHTML = matches.map(function(d) {
+    const desc = d.descricao.replace(/"/g,'&quot;');
+    return '<div class="ac-item" data-desc="' + desc + '" data-un="' + d.unidade + '" data-preco="' + d.preco + '">' + d.descricao + '<div class="ac-sub">' + d.unidade + (d.preco>0?' · '+R$(d.preco)+'/un':'') + '</div></div>';
+  }).join('');
+  list.querySelectorAll('.ac-item').forEach(function(item) {
+    item.addEventListener('mousedown', function(e) {
+      e.preventDefault();
+      selectOrderAC(rowId, item.dataset.desc, item.dataset.un, parseFloat(item.dataset.preco));
+    });
+  });
+  list.classList.add('open');
+}
+
+function selectOrderAC(rowId, descricao, unidade, preco) {
+  const row = orderRows.find(r => r.id === rowId);
+  if(row){ row.descricao = descricao; row.unidade = unidade; row.preco = preco; row.selecionado = true; }
+  const inp = document.getElementById('ac_input_' + rowId);
+  if(inp) inp.value = descricao;
+  closeOrderAC(rowId);
+  renderOrderRows();
+}
+
+function closeOrderAC(rowId) {
+  const l = document.getElementById('ac_list_' + rowId);
+  if(l) l.classList.remove('open');
+}
+
+function setOrderRowQty(rowId, val) {
+  const row = orderRows.find(r => r.id === rowId);
+  if(row) row.quantidade = Math.max(1, Number(val)||1);
+  updateOrderSummary();
+}
+
+function removeOrderRow(rowId) {
+  orderRows = orderRows.filter(r => r.id !== rowId);
+  renderOrderRows();
+}
+
+function updateOrderSummary() {
+  const casa  = document.getElementById('oCasa')?.value || '';
+  const resp  = (document.getElementById('oResp')?.value||'').trim();
+  const valid = orderRows.filter(r => r.selecionado && r.descricao && r.quantidade > 0);
+  const sumBox = document.getElementById('autoSummary');
+  if(!sumBox) return;
+  if(!valid.length){ sumBox.style.display = 'none'; return; }
+  document.getElementById('sumCasa').textContent = casa || '—';
+  document.getElementById('sumResp').textContent = resp || '—';
+  document.getElementById('sumItemsList').innerHTML = valid.map(function(r) {
+    return '<div class="sum-item"><div class="sum-item-info"><span class="sum-qty">' + r.quantidade + 'x</span><div><div class="sum-desc">' + r.descricao + '</div><div style="font-size:11px;color:var(--text-muted)">' + r.unidade + (r.preco>0?' · '+R$(r.preco)+'/un':'') + '</div></div></div><div class="sum-actions"><button class="btn-action btn-edit" onclick="focusOrderRow(\'' + r.id + '\')">✏️ Editar</button> <button class="btn-action" style="background:#fde8e8;color:var(--red)" onclick="removeOrderRow(\'' + r.id + '\')">✕ Excluir</button></div></div>';
+  }).join('');
+  sumBox.style.display = 'block';
+}
+
+function focusOrderRow(rowId) {
+  const inp = document.getElementById('ac_input_' + rowId);
+  if(inp){ inp.scrollIntoView({behavior:'smooth',block:'center'}); inp.focus(); inp.select(); }
+}
+
+function showConfirmPedido() {
+  const casa  = document.getElementById('oCasa').value;
+  const resp  = document.getElementById('oResp').value.trim();
+  const valid = orderRows.filter(r => r.selecionado && r.descricao && r.quantidade > 0);
+  if(!casa || !resp){ showToast('⚠️ Preencha Congregação e Responsável!'); return; }
+  if(!valid.length){ showToast('⚠️ Selecione pelo menos um item!'); return; }
+  document.getElementById('confirmPedidoModal').classList.add('open');
+}
+
+function confirmPedido(yes) {
+  document.getElementById('confirmPedidoModal').classList.remove('open');
+  if(!yes) return;
+  const casa  = document.getElementById('oCasa').value;
+  const resp  = document.getElementById('oResp').value.trim();
+  const dataP = document.getElementById('oData').value;
+  const valid = orderRows.filter(r => r.selecionado && r.descricao && r.quantidade > 0);
+
+  valid.forEach(function(r) {
+    DATA.pedidos.push({ descricao:r.descricao, unidade:r.unidade, preco:r.preco,
+      congregacao:casa, quantidade:r.quantidade, data:dataP });
+  });
+
+  if(!DATA.congregacoes[casa]) DATA.congregacoes[casa] = { endereco:'', items:[], total_geral:0 };
+  valid.forEach(function(r) {
+    const existing = DATA.congregacoes[casa].items.find(it => it.descricao === r.descricao);
+    if(existing){ existing.saida += r.quantidade; existing.total = existing.saida * existing.preco; }
+    else { DATA.congregacoes[casa].items.push({ descricao:r.descricao, unidade:r.unidade, preco:r.preco, saida:r.quantidade, total:r.preco*r.quantidade }); }
+    DATA.congregacoes[casa].total_geral = DATA.congregacoes[casa].items.reduce((s,it) => s+it.total, 0);
+  });
+
+  document.getElementById('oCasa').value = '';
+  document.getElementById('oResp').value = '';
+  document.getElementById('oObs').value  = '';
+  document.getElementById('oData').value = fmtDate(new Date());
+  orderRows = []; renderOrderRows(); addOrderRow();
+  document.getElementById('autoSummary').style.display = 'none';
+  const bl = document.getElementById('blessingMsg');
+  bl.style.display = 'block'; setTimeout(function(){ bl.style.display = 'none'; }, 3500);
+  filterPedidos(); buildDashboard(); buildCongregacoes();
+  if(window.fbSave) window.fbSave();
+  showToast('✅ Pedido registrado!');
+}
+
+function renderPedidos(items) {
+  let total = 0;
+  document.getElementById('pedidos-table').innerHTML = items.map(function(p) {
+    const t = p.quantidade * p.preco; total += t;
+    return '<tr><td class="td-bold">' + p.descricao + '</td><td><span class="badge badge-blue">' + p.unidade + '</span></td><td><span class="badge badge-gold">' + p.congregacao + '</span></td><td style="font-size:12px;color:var(--text-muted)">' + (p.data||'—') + '</td><td class="td-num">' + N(p.quantidade) + '</td><td class="td-num">' + (p.preco > 0 ? R$(p.preco) : '—') + '</td><td class="td-num td-bold">' + (t > 0 ? R$(t) : '—') + '</td></tr>';
+  }).join('');
+  document.getElementById('ped-total').textContent = R$(total);
+}
+
+function filterPedidos() {
+  const q = document.getElementById('search-ped').value.toLowerCase();
+  const c = document.getElementById('filter-ped-congr').value;
+  let items = DATA.pedidos.filter(p =>
+    (p.descricao.toLowerCase().includes(q) || p.congregacao.toLowerCase().includes(q)) &&
+    (c === '' || p.congregacao === c)
+  );
+  renderPedidos(items);
+}
+
+// ══════════════════════════════════════════════
+// COMPRAS
+// ══════════════════════════════════════════════
+function buildCompras() {
+  const items = DATA.estoque.filter(e => e.comprar || e.estq_atual < 0);
+  document.getElementById('badge-buy').textContent = items.length;
+  document.getElementById('compras-table').innerHTML = items.map(function(e) {
+    const motivo = e.estq_atual < 0
+      ? '<span class="badge badge-neg">Estoque negativo (' + N(e.estq_atual) + ')</span>'
+      : '<span class="badge badge-gold">Marcado "COMPRAR"</span>';
+    const realIdx = DATA.estoque.indexOf(e);
+    return '<tr><td class="td-bold">' + e.descricao + '</td><td><span class="badge badge-blue">' + e.unidade + '</span></td><td class="td-num">' + (e.preco > 0 ? R$(e.preco) : '—') + '</td><td class="td-num" style="color:var(--red);font-weight:700">' + N(e.estq_atual) + '</td><td>' + motivo + '</td><td style="font-size:12px;color:var(--text-muted)">' + (e.obs && e.obs !== 'COMPRAR' ? e.obs : '') + '</td><td><button class="btn-action btn-edit" onclick="editEstoque(' + realIdx + ')">✏️ Editar</button></td></tr>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+buildDashboard();
+buildCongregacoes();
+buildEstoque();
+buildPedidos();
+buildCompras();
+buildCadastro();
+
+</script>
+
+<!-- ══ MODAL EDIÇÃO ══ -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal-box">
+    <div class="modal-title" id="editModalTitle">✏️ Editar</div>
+    <div id="editModalBody"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel-modal" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveEditModal()">✅ Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL CONFIRMAÇÃO PEDIDO ══ -->
+<div class="confirm-modal-overlay" id="confirmPedidoModal">
+  <div class="confirm-modal-box">
+    <div class="confirm-icon">🤔</div>
+    <div class="confirm-title">Confirmar Pedido?</div>
+    <div class="confirm-sub">Verifique os itens e quantidades antes de confirmar o envio.</div>
+    <div class="confirm-btns">
+      <button class="btn-confirm-yes" onclick="confirmPedido(true)">✅ Sim, registrar!</button>
+      <button class="btn-confirm-no" onclick="confirmPedido(false)">❌ Não, voltar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div class="toast" id="toastMsg"></div>
+
+<!-- ══ RODAPÉ ══ -->
+<footer style="background:var(--navy);color:#a0b4c8;text-align:center;padding:14px 24px;font-size:12px;margin-top:40px;border-top:2px solid var(--gold);">
+  <span style="color:#fff;font-weight:600;">Sistema Desenvolvido por Leandro Machado</span>
+  <span style="color:#a0b4c8;margin:0 10px;">·</span>
+  <span>Congregação Cristã no Brasil — DL Caieiras/SP — Almoxarifado</span>
+</footer>
+
+
+</body>
+</html>
