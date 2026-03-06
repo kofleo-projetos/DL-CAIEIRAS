@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#1a3a5c">
-<meta name="description" content="CCB DL Caieiras - Gestão de Estoque e Pedidos Março 2026">
+<meta name="description" content="CCB CNS Caieiras - Gestão de Estoque e Pedidos Março 2026">
 <title>CCB Caieiras · Almoxarifado</title>
 <link rel="manifest" href="data:application/json,{%22name%22:%22CCB%20Caieiras%22,%22short_name%22:%22CCB%22,%22theme_color%22:%22%231a3a5c%22,%22background_color%22:%22%23f0f4f8%22,%22display%22:%22standalone%22}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -435,6 +435,18 @@
   /* ── Toast ── */
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--navy); color: #fff; padding: 10px 22px; border-radius: 20px; font-size: 13px; font-weight: 600; z-index: 2000; box-shadow: var(--shadow-lg); opacity: 0; transition: opacity 0.3s; pointer-events: none; }
   .toast.show { opacity: 1; }
+
+  /* ── Modal Senha ── */
+  .senha-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); backdrop-filter:blur(5px); z-index:1500; align-items:center; justify-content:center; }
+  .senha-overlay.open { display:flex; }
+  .senha-box { background:var(--card); border-radius:var(--radius); padding:32px 28px; width:100%; max-width:360px; box-shadow:var(--shadow-lg); animation:popIn 0.2s ease; text-align:center; }
+  .senha-icon { font-size:40px; margin-bottom:10px; }
+  .senha-title { font-size:17px; font-weight:700; color:var(--navy); margin-bottom:6px; }
+  .senha-sub { font-size:12px; color:var(--text-muted); margin-bottom:20px; }
+  .senha-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:'Sora',sans-serif; font-size:16px; text-align:center; letter-spacing:4px; outline:none; background:var(--bg); color:var(--navy); font-weight:700; }
+  .senha-input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(59,127,196,0.12); }
+  .senha-error { color:var(--red); font-size:12px; font-weight:600; margin-top:8px; display:none; }
+  .senha-btns { display:flex; gap:10px; margin-top:18px; justify-content:center; }
 </style>
 <!-- ══ FIREBASE SDK ══ -->
 <!-- Projeto: dl-caieiras | Conta: projetosleandro98@gmail.com -->
@@ -525,7 +537,7 @@
       <div class="logo-icon">CCB</div>
       <div class="logo-text">
         <strong>Congregação Cristã no Brasil</strong>
-        <small>DL · Caieiras / SP — Almoxarifado</small>
+        <small>CNS · Caieiras / SP — Almoxarifado</small>
       </div>
     </div>
     <span class="header-month">📅 MARÇO 2026</span>
@@ -535,19 +547,19 @@
 
 <nav>
   <div class="nav-inner">
-    <button class="tab-btn active" onclick="showTab('dashboard')">📊 Dashboard</button>
-    <button class="tab-btn" onclick="showTab('congregacoes')">⛪ Congregações <span class="tab-badge" id="badge-congr">9</span></button>
-    <button class="tab-btn" onclick="showTab('estoque')">📦 Estoque <span class="tab-badge" id="badge-est">—</span></button>
-    <button class="tab-btn" onclick="showTab('pedidos')">📋 Pedidos</button>
-    <button class="tab-btn" onclick="showTab('compras')">🛒 Comprar <span class="tab-badge" id="badge-buy" style="background:#c0392b;color:#fff">!</span></button>
-    <button class="tab-btn" onclick="showTab('cadastro')">🏛️ Cadastro</button>
+    <button class="tab-btn active" onclick="showTab('pedidos')">📋 Pedidos</button>
+    <button class="tab-btn" onclick="protectedTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" onclick="protectedTab('congregacoes')">⛪ Congregações <span class="tab-badge" id="badge-congr">9</span></button>
+    <button class="tab-btn" onclick="protectedTab('estoque')">📦 Estoque <span class="tab-badge" id="badge-est">—</span></button>
+    <button class="tab-btn" onclick="protectedTab('compras')">🛒 Comprar <span class="tab-badge" id="badge-buy" style="background:#c0392b;color:#fff">!</span></button>
+    <button class="tab-btn" onclick="protectedTab('cadastro')">🏛️ Cadastro</button>
   </div>
 </nav>
 
 <main>
 
   <!-- ══════════════════════════ DASHBOARD ══════════════════════════ -->
-  <div class="view active" id="view-dashboard">
+  <div class="view" id="view-dashboard">
     <div class="kpi-row" id="kpi-row"></div>
 
     <div class="alert-box" id="alert-compras"></div>
@@ -643,10 +655,13 @@
         <tbody id="estoque-table"></tbody>
       </table>
     </div>
+    <div style="margin-top:16px;">
+      <button class="btn-save" onclick="addNovoItemEstoque()" style="background:var(--blue);font-size:13px;padding:9px 18px;">➕ Adicionar Item ao Estoque</button>
+    </div>
   </div>
 
   <!-- ══════════════════════════ PEDIDOS (nova lógica) ══════════════════════════ -->
-  <div class="view" id="view-pedidos">
+  <div class="view active" id="view-pedidos">
     <div class="order-section">
       <div class="order-header">🛒 Novo Pedido</div>
       <div class="order-fields">
@@ -1127,7 +1142,7 @@ function exportCongrPDF() {
     var decl =
       '<table class="declaracao">' +
         '<tr><td class="hdr" colspan="2">Declaração de Trânsito</td></tr>' +
-        '<tr><td class="hdr" colspan="2">CONGREGAÇÃO CRISTÃ NO BRASIL DL - CAIEIRAS</td></tr>' +
+        '<tr><td class="hdr" colspan="2">CONGREGAÇÃO CRISTÃ NO BRASIL CNS - CAIEIRAS</td></tr>' +
         '<tr><td class="hdr" colspan="2">DISTRIBUIÇÃO DE PRODUTOS P/ CASA DE ORAÇÃO (SUPRIR ALMOXARIFADO)</td></tr>' +
         '<tr><td class="hdr" colspan="2">Destinatário</td></tr>' +
         '<tr><td class="lbl">Nome</td><td>' + nomeCCB + '</td></tr>' +
@@ -1176,7 +1191,7 @@ function renderEstoque(items) {
                 : e.estq_atual > 0 ? '<span class="badge badge-green">OK</span>'
                 : '<span class="badge">Zerado</span>';
     const realIdx = DATA.estoque.indexOf(e);
-    return '<tr class="' + cls + '"><td class="td-bold">' + e.descricao + '</td><td><span class="badge badge-blue">' + e.unidade + '</span></td><td class="td-num">' + (e.preco > 0 ? R$(e.preco) : '—') + '</td><td class="td-num">' + N(e.estq_inicial) + '</td><td class="td-num" style="' + (neg?'color:var(--red);font-weight:700':'') + '">' + N(e.estq_atual) + '</td><td class="td-num" style="' + (e.val_atual < 0?'color:var(--red)':'') + '">' + (e.val_atual !== 0 ? R$(e.val_atual) : '—') + '</td><td>' + badge + (e.obs && e.obs !== 'COMPRAR' ? ' <small style="color:var(--text-muted)">' + e.obs + '</small>' : '') + '</td><td><button class="btn-action btn-edit" onclick="editEstoque(' + realIdx + ')">✏️ Editar</button></td></tr>';
+    return '<tr class="' + cls + '"><td class="td-bold">' + e.descricao + '</td><td><span class="badge badge-blue">' + e.unidade + '</span></td><td class="td-num">' + (e.preco > 0 ? R$(e.preco) : '—') + '</td><td class="td-num">' + N(e.estq_inicial) + '</td><td class="td-num" style="' + (neg?'color:var(--red);font-weight:700':'') + '">' + N(e.estq_atual) + '</td><td class="td-num" style="' + (e.val_atual < 0?'color:var(--red)':'') + '">' + (e.val_atual !== 0 ? R$(e.val_atual) : '—') + '</td><td>' + badge + (e.obs && e.obs !== 'COMPRAR' ? ' <small style="color:var(--text-muted)">' + e.obs + '</small>' : '') + '</td><td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-action btn-edit" onclick="editEstoque(' + realIdx + ')">✏️ Editar</button><button class="btn-action" style="background:#e6f7ee;color:var(--green);" onclick="entradaEstoque(' + realIdx + ')">📥 Entrada</button><button class="btn-action" style="background:#fde8e8;color:var(--red);" onclick="deleteEstoque(' + realIdx + ')">🗑️ Excluir</button></td></tr>';
   }).join('');
 }
 
@@ -1213,6 +1228,92 @@ function filterEstoque() {
   else if (st === 'ok')      items = items.filter(e => e.estq_atual > 0 && !e.comprar);
   else if (st === 'zero')    items = items.filter(e => e.estq_atual === 0);
   renderEstoque(items);
+}
+
+function entradaEstoque(idx) {
+  const e = DATA.estoque[idx];
+  openEditModal('📥 Entrada de Estoque — ' + e.descricao, [
+    { key:'quantidade', label:'Quantidade a Adicionar', type:'number', value:1, step:'1' }
+  ], function(data) {
+    const qtd = Number(data.quantidade) || 0;
+    if(qtd <= 0) { showToast('⚠️ Informe uma quantidade válida!'); return; }
+    DATA.estoque[idx].estq_atual += qtd;
+    DATA.estoque[idx].estq_inicial += qtd;
+    DATA.estoque[idx].val_atual = DATA.estoque[idx].preco * DATA.estoque[idx].estq_atual;
+    filterEstoque(); buildCompras(); buildDashboard();
+    if(window.fbSave) window.fbSave();
+    showToast('✅ Entrada de ' + qtd + ' unidade(s) registrada!');
+  });
+}
+
+function deleteEstoque(idx) {
+  const e = DATA.estoque[idx];
+  if(!confirm('Excluir "' + e.descricao + '" do estoque? Esta ação não pode ser desfeita.')) return;
+  DATA.estoque.splice(idx, 1);
+  filterEstoque(); buildCompras(); buildDashboard();
+  if(window.fbSave) window.fbSave();
+  showToast('🗑️ Item removido do estoque.');
+}
+
+function addNovoItemEstoque() {
+  openEditModal('➕ Novo Item no Estoque', [
+    { key:'descricao',    label:'Descrição',           value:'' },
+    { key:'unidade',      label:'Unidade (ex: UN, CX)',value:'UN' },
+    { key:'preco',        label:'Preço Unitário (R$)', type:'number', step:'0.01', value:0 },
+    { key:'estq_inicial', label:'Estoque Inicial',     type:'number', value:0 },
+    { key:'estq_atual',   label:'Estoque Atual',       type:'number', value:0 },
+    { key:'obs',          label:'Observação',          value:'' },
+    { key:'comprar',      label:'Precisa Comprar?',    type:'select', value:'false',
+      options:[{v:'false',l:'Não'},{v:'true',l:'Sim'}] }
+  ], function(data) {
+    if(!data.descricao.trim()) { showToast('⚠️ Informe a descrição do item!'); return; }
+    DATA.estoque.push({
+      descricao: data.descricao.trim(),
+      unidade:   data.unidade.trim() || 'UN',
+      preco:     data.preco,
+      estq_inicial: data.estq_inicial,
+      estq_atual:   data.estq_atual,
+      val_atual:    data.preco * data.estq_atual,
+      obs:          data.obs,
+      comprar:      data.comprar === 'true'
+    });
+    filterEstoque(); buildCompras(); buildDashboard();
+    document.getElementById('badge-est').textContent = DATA.estoque.length;
+    if(window.fbSave) window.fbSave();
+    showToast('✅ Item adicionado ao estoque!');
+  });
+}
+
+// ── Proteção por senha para abas restritas ──
+const _SENHA_ABA = 'amem';
+let _senhaDesbloqueada = false;
+
+function protectedTab(tabName) {
+  if(_senhaDesbloqueada) { showTab(tabName); return; }
+  const modal = document.getElementById('senhaModal');
+  modal.dataset.target = tabName;
+  document.getElementById('senhaInput').value = '';
+  document.getElementById('senhaError').style.display = 'none';
+  modal.classList.add('open');
+  setTimeout(function(){ document.getElementById('senhaInput').focus(); }, 100);
+}
+
+function confirmarSenha() {
+  const val = document.getElementById('senhaInput').value;
+  if(val === _SENHA_ABA) {
+    _senhaDesbloqueada = true;
+    const target = document.getElementById('senhaModal').dataset.target;
+    fecharSenhaModal();
+    showTab(target);
+  } else {
+    document.getElementById('senhaError').style.display = 'block';
+    document.getElementById('senhaInput').value = '';
+    document.getElementById('senhaInput').focus();
+  }
+}
+
+function fecharSenhaModal() {
+  document.getElementById('senhaModal').classList.remove('open');
 }
 
 // ══════════════════════════════════════════════
@@ -1456,6 +1557,22 @@ buildCadastro();
   </div>
 </div>
 
+<!-- ══ MODAL SENHA ══ -->
+<div class="senha-overlay" id="senhaModal">
+  <div class="senha-box">
+    <div class="senha-icon">🔐</div>
+    <div class="senha-title">Área Restrita</div>
+    <div class="senha-sub">Digite a senha para acessar esta seção</div>
+    <input type="password" class="senha-input" id="senhaInput" placeholder="••••" maxlength="20"
+      onkeydown="if(event.key==='Enter')confirmarSenha()">
+    <div class="senha-error" id="senhaError">❌ Senha incorreta. Tente novamente.</div>
+    <div class="senha-btns">
+      <button class="btn-cancel-modal" onclick="fecharSenhaModal()">Cancelar</button>
+      <button class="btn-save" onclick="confirmarSenha()">🔓 Entrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ TOAST ══ -->
 <div class="toast" id="toastMsg"></div>
 
@@ -1463,7 +1580,7 @@ buildCadastro();
 <footer style="background:var(--navy);color:#a0b4c8;text-align:center;padding:14px 24px;font-size:12px;margin-top:40px;border-top:2px solid var(--gold);">
   <span style="color:#fff;font-weight:600;">Sistema Desenvolvido por Leandro Machado</span>
   <span style="color:#a0b4c8;margin:0 10px;">·</span>
-  <span>Congregação Cristã no Brasil — DL Caieiras/SP — Almoxarifado</span>
+  <span>Congregação Cristã no Brasil — CNS Caieiras/SP — Almoxarifado</span>
 </footer>
 
 
