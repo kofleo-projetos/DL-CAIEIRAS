@@ -210,7 +210,7 @@
   /* ── Congregação grid ── */
   .congr-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 20px;
   }
   .congr-card {
@@ -236,12 +236,17 @@
     white-space: nowrap;
   }
   .congr-body { padding: 0; }
+
+  /* ── Congr item com botões ── */
   .congr-item {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 10px 20px; border-bottom: 1px solid #f0f4f8;
-    gap: 12px;
+    display: flex; align-items: center;
+    padding: 9px 14px 9px 20px; border-bottom: 1px solid #f0f4f8;
+    gap: 10px;
+    transition: background 0.15s;
   }
   .congr-item:last-child { border-bottom: none; }
+  .congr-item:hover { background: #f7fafd; }
+  .congr-item:hover .ci-actions { opacity: 1; }
   .ci-desc { font-size: 13px; color: var(--text); flex: 1; min-width: 0; }
   .ci-desc small { display: block; font-size: 11px; color: var(--text-muted); }
   .ci-qty {
@@ -254,6 +259,23 @@
     font-size: 13px; color: var(--text-muted);
     white-space: nowrap; min-width: 70px; text-align: right;
   }
+  /* Botões de ação por item da congregação */
+  .ci-actions {
+    display: flex; gap: 4px; flex-shrink: 0;
+    opacity: 0;
+    transition: opacity 0.18s;
+  }
+  .ci-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; padding: 0;
+    border-radius: 6px; border: none; cursor: pointer;
+    font-size: 12px;
+    transition: transform 0.12s, opacity 0.12s;
+  }
+  .ci-btn:hover { transform: scale(1.15); }
+  .ci-btn-edit { background: #e3eff8; color: var(--navy-mid); }
+  .ci-btn-del  { background: #fde8e8; color: var(--red); }
+
   .congr-empty {
     padding: 24px 20px; text-align: center;
     color: var(--text-muted); font-size: 13px;
@@ -307,6 +329,7 @@
     .kpi-row { grid-template-columns: 1fr 1fr; }
     .congr-grid { grid-template-columns: 1fr; }
     .kpi-value { font-size: 20px; }
+    .ci-actions { opacity: 1; } /* sempre visível no mobile */
   }
 
   /* ── Estoque status colors ── */
@@ -319,6 +342,7 @@
     header, nav, .tab-btn, .search-bar, .filter-row, footer { display: none !important; }
     .view { display: block !important; }
     main { padding: 0; }
+    .ci-actions { display: none !important; }
   }
 
   /* ── Btn Edit / Action ── */
@@ -449,7 +473,6 @@
   .senha-btns { display:flex; gap:10px; margin-top:18px; justify-content:center; }
 </style>
 <!-- ══ FIREBASE SDK ══ -->
-<!-- Projeto: dl-caieiras | Conta: projetosleandro98@gmail.com -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
   import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -467,7 +490,6 @@
   const db  = getFirestore(app);
   const DOC_REF = doc(db, "almoxarifado", "dados");
 
-  // ── Salvar no Firebase ──
   window.fbSave = async function() {
     try {
       await setDoc(DOC_REF, {
@@ -483,7 +505,6 @@
     }
   };
 
-  // ── Carregar do Firebase na inicialização ──
   async function fbLoad() {
     try {
       const snap = await getDoc(DOC_REF);
@@ -507,7 +528,6 @@
     }
   }
 
-  // ── Escuta em tempo real (atualiza se outro usuário salvar) ──
   onSnapshot(DOC_REF, (snap) => {
     if(snap.exists() && window._fbLoaded) {
       const d = snap.data();
@@ -521,7 +541,6 @@
     }
   });
 
-  // Aguarda DOM/scripts carregarem, depois busca dados do Firebase
   window.addEventListener("load", () => {
     setTimeout(() => {
       fbLoad().then(() => { window._fbLoaded = true; });
@@ -541,7 +560,6 @@
       </div>
     </div>
     <span class="header-month">📅 MARÇO 2026</span>
-
   </div>
 </header>
 
@@ -561,9 +579,7 @@
   <!-- ══════════════════════════ DASHBOARD ══════════════════════════ -->
   <div class="view" id="view-dashboard">
     <div class="kpi-row" id="kpi-row"></div>
-
     <div class="alert-box" id="alert-compras"></div>
-
     <div class="section-title">Distribuição por Congregação — Março 2026</div>
     <div class="table-wrap">
       <table>
@@ -587,7 +603,6 @@
         </tfoot>
       </table>
     </div>
-
     <div class="section-title">Top 10 Produtos Mais Distribuídos</div>
     <div class="table-wrap">
       <table>
@@ -606,7 +621,6 @@
   </div>
 
   <!-- ══════════════════════════ CONGREGAÇÕES ══════════════════════════ -->
-  <!-- ══════════════════════════ CONGREGAÇÕES ══════════════════════════ -->
   <div class="view" id="view-congregacoes">
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
       <div class="section-title" style="margin:0">Pedidos por Casa de Oração</div>
@@ -620,6 +634,9 @@
     <div class="search-bar" style="max-width:400px">
       <input type="text" id="search-congr" placeholder="Filtrar congregação…" oninput="filterCongr()">
     </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+      💡 <em>Passe o mouse sobre um item para ver as opções de editar e excluir.</em>
+    </p>
     <div class="congr-grid" id="congr-grid"></div>
   </div>
 
@@ -660,7 +677,7 @@
     </div>
   </div>
 
-  <!-- ══════════════════════════ PEDIDOS (nova lógica) ══════════════════════════ -->
+  <!-- ══════════════════════════ PEDIDOS ══════════════════════════ -->
   <div class="view active" id="view-pedidos">
     <div class="order-section">
       <div class="order-header">🛒 Novo Pedido</div>
@@ -759,7 +776,6 @@
     </div>
   </div>
 
-
   <!-- ══════════════════════════ CADASTRO ══════════════════════════ -->
   <div class="view" id="view-cadastro">
     <div class="section-title">🏛️ Cadastro de Casas de Oração</div>
@@ -825,8 +841,6 @@
 
 </main>
 
-
-
 <script>
 // ══════════════════════════════════════════════
 // DATA
@@ -840,7 +854,6 @@ const R$ = v => 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(/\B(?=(\d
 const N  = v => Number(v).toLocaleString('pt-BR');
 const fmtDate = d => d.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric'});
 
-// Lista centralizada de igrejas
 let IGREJAS = Object.keys(DATA.congregacoes).sort();
 
 function rebuildIgrejaSelects() {
@@ -915,6 +928,50 @@ function saveEditModal() {
 }
 
 // ══════════════════════════════════════════════
+// EDITAR / EXCLUIR ITEM DE CONGREGAÇÃO
+// ══════════════════════════════════════════════
+
+// Edita quantidade e preço de um item distribuído a uma congregação
+function editCongrItem(congregName, itemIdx) {
+  const c = DATA.congregacoes[congregName];
+  if(!c || !c.items[itemIdx]) return;
+  const it = c.items[itemIdx];
+  openEditModal('✏️ Editar Item — ' + congregName, [
+    { key:'descricao', label:'Descrição', value: it.descricao },
+    { key:'unidade',   label:'Unidade',   value: it.unidade },
+    { key:'preco',     label:'Preço Unitário (R$)', type:'number', step:'0.01', value: it.preco },
+    { key:'saida',     label:'Quantidade Distribuída', type:'number', step:'1', value: it.saida }
+  ], function(data) {
+    if(data.saida <= 0) { showToast('⚠️ A quantidade deve ser maior que zero!'); return; }
+    c.items[itemIdx].descricao = data.descricao;
+    c.items[itemIdx].unidade   = data.unidade;
+    c.items[itemIdx].preco     = data.preco;
+    c.items[itemIdx].saida     = data.saida;
+    c.items[itemIdx].total     = data.preco * data.saida;
+    // Recalcula total da congregação
+    c.total_geral = c.items.reduce((s, i) => s + i.total, 0);
+    filterCongr();
+    buildDashboard();
+    if(window.fbSave) window.fbSave();
+    showToast('✅ Item atualizado com sucesso!');
+  });
+}
+
+// Exclui um item distribuído a uma congregação
+function deleteCongrItem(congregName, itemIdx) {
+  const c = DATA.congregacoes[congregName];
+  if(!c || !c.items[itemIdx]) return;
+  const it = c.items[itemIdx];
+  if(!confirm('Excluir "' + it.descricao + '" da congregação ' + congregName + '?\n\nEsta ação não pode ser desfeita.')) return;
+  c.items.splice(itemIdx, 1);
+  c.total_geral = c.items.reduce((s, i) => s + i.total, 0);
+  filterCongr();
+  buildDashboard();
+  if(window.fbSave) window.fbSave();
+  showToast('🗑️ Item removido da congregação.');
+}
+
+// ══════════════════════════════════════════════
 // CADASTRO DE IGREJAS
 // ══════════════════════════════════════════════
 function buildCadastro() { renderChurches(); }
@@ -951,7 +1008,6 @@ function saveChurchModal() {
   };
   dados.endereco = dados.rua + (dados.bairro ? ' - ' + dados.bairro : '');
 
-  // Renomear se o nome mudou
   if(novoNome !== original) {
     if(IGREJAS.includes(novoNome)) { showToast('⚠️ Já existe uma igreja com esse nome!'); return; }
     const old = DATA.congregacoes[original] || {};
@@ -1060,7 +1116,7 @@ function buildDashboard() {
 }
 
 // ══════════════════════════════════════════════
-// CONGREGAÇÕES
+// CONGREGAÇÕES  ← MODIFICADO: botões por item
 // ══════════════════════════════════════════════
 function buildCongregacoes() {
   document.getElementById('badge-congr').textContent = IGREJAS.length;
@@ -1070,11 +1126,46 @@ function buildCongregacoes() {
 
 function renderCongr(entries) {
   document.getElementById('congr-grid').innerHTML = entries.map(function(entry) {
-    const name = entry[0], c = entry[1];
-    const itemsHtml = c.items.length === 0
-      ? '<div class="congr-empty">Nenhum pedido registrado este mês</div>'
-      : c.items.map(it => '<div class="congr-item"><div class="ci-desc">' + it.descricao + '<small>' + it.unidade + ' · ' + R$(it.preco) + '/un</small></div><div class="ci-qty">' + N(it.saida) + ' ' + it.unidade + '</div><div class="ci-val">' + R$(it.total) + '</div></div>').join('');
-    return '<div class="congr-card"><div class="congr-header"><div><div class="congr-name">⛪ ' + name + '</div><div class="congr-addr">' + (c.endereco||'') + '</div></div><div class="congr-total">' + R$(c.total_geral) + '</div></div><div class="congr-body">' + itemsHtml + '</div></div>';
+    var name = entry[0], c = entry[1];
+    var safeName = name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+
+    var itemsHtml;
+    if(c.items.length === 0) {
+      itemsHtml = '<div class="congr-empty">Nenhum pedido registrado este mês</div>';
+    } else {
+      itemsHtml = c.items.map(function(it, idx) {
+        return (
+          '<div class="congr-item">' +
+            '<div class="ci-desc">' + it.descricao +
+              '<small>' + it.unidade + ' · ' + R$(it.preco) + '/un</small>' +
+            '</div>' +
+            '<div class="ci-qty">' + N(it.saida) + ' ' + it.unidade + '</div>' +
+            '<div class="ci-val">' + R$(it.total) + '</div>' +
+            '<div class="ci-actions">' +
+              '<button class="ci-btn ci-btn-edit" ' +
+                'onclick="editCongrItem(\'' + safeName + '\',' + idx + ')" ' +
+                'title="Editar item">✏️</button>' +
+              '<button class="ci-btn ci-btn-del" ' +
+                'onclick="deleteCongrItem(\'' + safeName + '\',' + idx + ')" ' +
+                'title="Excluir item">✕</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
+
+    return (
+      '<div class="congr-card">' +
+        '<div class="congr-header">' +
+          '<div>' +
+            '<div class="congr-name">⛪ ' + name + '</div>' +
+            '<div class="congr-addr">' + (c.endereco||'') + '</div>' +
+          '</div>' +
+          '<div class="congr-total">' + R$(c.total_geral) + '</div>' +
+        '</div>' +
+        '<div class="congr-body">' + itemsHtml + '</div>' +
+      '</div>'
+    );
   }).join('');
 }
 
@@ -1094,8 +1185,6 @@ function exportCongrPDF() {
   if(!entries.length) { showToast('⚠️ Nenhuma congregação selecionada!'); return; }
 
   const hoje = fmtDate(new Date());
-
-  // CSS declaração de trânsito
   var css = [
     'body{font-family:Arial,sans-serif;font-size:12px;color:#000;margin:0;padding:0;}',
     '@page{size:A4;margin:18mm 14mm;}',
@@ -1126,7 +1215,6 @@ function exportCongrPDF() {
     var ie      = c.ie      || 'ISENTO';
     var totalFmt = 'R$ ' + Number(c.total_geral).toFixed(2).replace('.',',');
 
-    // Linha de itens
     var itensHtml = '';
     if(c.items.length > 0) {
       itensHtml += '<tr><th colspan="5" style="text-align:center;background:#ddd;">PRODUTOS DISTRIBUÍDOS</th></tr>';
@@ -1166,7 +1254,6 @@ function exportCongrPDF() {
   });
 
   var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Declaracao Transito CCB Caieiras ' + hoje + '</title><style>' + css + '</style></head><body>' + pages + '</body></html>';
-
   var w = window.open('', '_blank');
   if(!w) { showToast('⚠️ Permita pop-ups para exportar PDF'); return; }
   w.document.write(html);
@@ -1284,7 +1371,7 @@ function addNovoItemEstoque() {
   });
 }
 
-// ── Proteção por senha para abas restritas ──
+// ── Proteção por senha ──
 const _SENHA_ABA = 'amem';
 let _senhaDesbloqueada = false;
 
@@ -1582,7 +1669,6 @@ buildCadastro();
   <span style="color:#a0b4c8;margin:0 10px;">·</span>
   <span>Congregação Cristã no Brasil — CNS Caieiras/SP — Almoxarifado</span>
 </footer>
-
 
 </body>
 </html>
