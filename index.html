@@ -259,7 +259,6 @@
     font-size: 13px; color: var(--text-muted);
     white-space: nowrap; min-width: 70px; text-align: right;
   }
-  /* Botões de ação por item da congregação */
   .ci-actions {
     display: flex; gap: 4px; flex-shrink: 0;
     opacity: 0;
@@ -329,7 +328,7 @@
     .kpi-row { grid-template-columns: 1fr 1fr; }
     .congr-grid { grid-template-columns: 1fr; }
     .kpi-value { font-size: 20px; }
-    .ci-actions { opacity: 1; } /* sempre visível no mobile */
+    .ci-actions { opacity: 1; }
   }
 
   /* ── Estoque status colors ── */
@@ -387,7 +386,7 @@
   .btn-save { background: var(--green); color: #fff; border: none; padding: 9px 20px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
   .btn-cancel-modal { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); padding: 9px 20px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; }
 
-  /* ── Pedidos: Nova lógica com autocomplete ── */
+  /* ── Pedidos ── */
   .order-section { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 24px; margin-bottom: 24px; }
   .order-header { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
   .order-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
@@ -720,38 +719,6 @@
         🙌 Deus Abençoe! Pedido registrado com sucesso!
       </div>
     </div>
-
-    <div class="section-title">Histórico de Pedidos — Março 2026</div>
-    <div class="filter-row">
-      <div class="search-bar" style="flex:1; min-width:200px; max-width:420px; margin-bottom:0;">
-        <input type="text" id="search-ped" placeholder="Buscar produto ou congregação…" oninput="filterPedidos()">
-      </div>
-      <select class="filter-select" id="filter-ped-congr" onchange="filterPedidos()">
-        <option value="">Todas as congregações</option>
-      </select>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Produto</th>
-            <th>Un.</th>
-            <th>Congregação</th>
-            <th>Data</th>
-            <th style="text-align:right">Qtd.</th>
-            <th style="text-align:right">R$ Unit.</th>
-            <th style="text-align:right">Total (R$)</th>
-          </tr>
-        </thead>
-        <tbody id="pedidos-table"></tbody>
-        <tfoot>
-          <tr style="background:#f0f4f8; font-weight:700;">
-            <td colspan="6" style="padding:12px 14px;color:var(--navy)">TOTAL</td>
-            <td class="td-num td-bold" style="color:var(--green)" id="ped-total"></td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
   </div>
 
   <!-- ══════════════════════════ COMPRAS ══════════════════════════ -->
@@ -869,12 +836,6 @@ function rebuildIgrejaSelects() {
     fPdf.innerHTML = '<option value="">Todas as congregações</option>' +
       IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
   }
-  const fPed = document.getElementById('filter-ped-congr');
-  if(fPed) {
-    const cur = fPed.value;
-    fPed.innerHTML = '<option value="">Todas as congregações</option>' +
-      IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
-  }
 }
 
 function showTab(id) {
@@ -930,8 +891,6 @@ function saveEditModal() {
 // ══════════════════════════════════════════════
 // EDITAR / EXCLUIR ITEM DE CONGREGAÇÃO
 // ══════════════════════════════════════════════
-
-// Edita quantidade e preço de um item distribuído a uma congregação
 function editCongrItem(congregName, itemIdx) {
   const c = DATA.congregacoes[congregName];
   if(!c || !c.items[itemIdx]) return;
@@ -948,7 +907,6 @@ function editCongrItem(congregName, itemIdx) {
     c.items[itemIdx].preco     = data.preco;
     c.items[itemIdx].saida     = data.saida;
     c.items[itemIdx].total     = data.preco * data.saida;
-    // Recalcula total da congregação
     c.total_geral = c.items.reduce((s, i) => s + i.total, 0);
     filterCongr();
     buildDashboard();
@@ -957,7 +915,6 @@ function editCongrItem(congregName, itemIdx) {
   });
 }
 
-// Exclui um item distribuído a uma congregação
 function deleteCongrItem(congregName, itemIdx) {
   const c = DATA.congregacoes[congregName];
   if(!c || !c.items[itemIdx]) return;
@@ -1116,7 +1073,7 @@ function buildDashboard() {
 }
 
 // ══════════════════════════════════════════════
-// CONGREGAÇÕES  ← MODIFICADO: botões por item
+// CONGREGAÇÕES
 // ══════════════════════════════════════════════
 function buildCongregacoes() {
   document.getElementById('badge-congr').textContent = IGREJAS.length;
@@ -1415,7 +1372,6 @@ function buildPedidos() {
   const oData = document.getElementById('oData');
   if(oData) oData.value = fmtDate(new Date());
   addOrderRow();
-  renderPedidos(DATA.pedidos);
 }
 
 function addOrderRow() {
@@ -1568,28 +1524,9 @@ function confirmPedido(yes) {
   document.getElementById('autoSummary').style.display = 'none';
   const bl = document.getElementById('blessingMsg');
   bl.style.display = 'block'; setTimeout(function(){ bl.style.display = 'none'; }, 3500);
-  filterPedidos(); buildDashboard(); buildCongregacoes();
+  buildDashboard(); buildCongregacoes();
   if(window.fbSave) window.fbSave();
   showToast('✅ Pedido registrado!');
-}
-
-function renderPedidos(items) {
-  let total = 0;
-  document.getElementById('pedidos-table').innerHTML = items.map(function(p) {
-    const t = p.quantidade * p.preco; total += t;
-    return '<tr><td class="td-bold">' + p.descricao + '</td><td><span class="badge badge-blue">' + p.unidade + '</span></td><td><span class="badge badge-gold">' + p.congregacao + '</span></td><td style="font-size:12px;color:var(--text-muted)">' + (p.data||'—') + '</td><td class="td-num">' + N(p.quantidade) + '</td><td class="td-num">' + (p.preco > 0 ? R$(p.preco) : '—') + '</td><td class="td-num td-bold">' + (t > 0 ? R$(t) : '—') + '</td></tr>';
-  }).join('');
-  document.getElementById('ped-total').textContent = R$(total);
-}
-
-function filterPedidos() {
-  const q = document.getElementById('search-ped').value.toLowerCase();
-  const c = document.getElementById('filter-ped-congr').value;
-  let items = DATA.pedidos.filter(p =>
-    (p.descricao.toLowerCase().includes(q) || p.congregacao.toLowerCase().includes(q)) &&
-    (c === '' || p.congregacao === c)
-  );
-  renderPedidos(items);
 }
 
 // ══════════════════════════════════════════════
