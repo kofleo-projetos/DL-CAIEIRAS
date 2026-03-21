@@ -470,6 +470,175 @@
   .senha-input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(59,127,196,0.12); }
   .senha-error { color:var(--red); font-size:12px; font-weight:600; margin-top:8px; display:none; }
   .senha-btns { display:flex; gap:10px; margin-top:18px; justify-content:center; }
+
+  /* ══════════════════════════════════════════
+     ── BOTÃO BLOQUEAR PEDIDOS (Toggle ON/OFF) ──
+     ══════════════════════════════════════════ */
+  .lock-toggle-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 50px;
+    padding: 8px 18px 8px 10px;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .lock-toggle-wrap:hover {
+    box-shadow: var(--shadow-lg);
+  }
+  .lock-toggle-wrap.bloqueado {
+    border-color: var(--red);
+    background: #fff5f5;
+    box-shadow: 0 2px 16px rgba(192,57,43,0.18);
+  }
+  .lock-toggle-wrap.liberado {
+    border-color: var(--green);
+    background: #f5fff8;
+    box-shadow: 0 2px 16px rgba(39,174,96,0.18);
+  }
+
+  /* Switch track */
+  .lock-switch {
+    position: relative;
+    width: 46px; height: 26px;
+    flex-shrink: 0;
+  }
+  .lock-switch input { display: none; }
+  .lock-track {
+    position: absolute; inset: 0;
+    border-radius: 13px;
+    background: #d0dce8;
+    transition: background 0.35s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+  }
+  .lock-track::after {
+    content: '';
+    position: absolute;
+    left: 3px; top: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+    transition: transform 0.35s cubic-bezier(.4,0,.2,1), background 0.35s;
+  }
+  /* ON = bloqueado = vermelho */
+  .lock-switch input:checked + .lock-track {
+    background: var(--red);
+  }
+  .lock-switch input:checked + .lock-track::after {
+    transform: translateX(20px);
+  }
+  /* Pulse ring quando bloqueado */
+  .lock-switch input:checked + .lock-track::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 17px;
+    border: 2px solid rgba(192,57,43,0.35);
+    animation: lockPulse 1.6s ease-in-out infinite;
+  }
+  @keyframes lockPulse {
+    0%,100% { opacity: 0.7; transform: scale(1); }
+    50%      { opacity: 0; transform: scale(1.18); }
+  }
+
+  .lock-icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+  }
+  .lock-toggle-wrap.bloqueado .lock-icon { transform: rotate(-10deg) scale(1.15); }
+
+  .lock-label-wrap { line-height: 1.25; }
+  .lock-label-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--navy); letter-spacing: 0.2px;
+  }
+  .lock-label-status {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.6px;
+    color: var(--green);
+    transition: color 0.3s;
+  }
+  .lock-toggle-wrap.bloqueado .lock-label-status { color: var(--red); }
+
+  /* ── Modal Bloqueio de Pedidos ── */
+  .bloqueio-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(10,20,40,0.72);
+    backdrop-filter: blur(8px);
+    z-index: 1200;
+    align-items: center; justify-content: center;
+  }
+  .bloqueio-overlay.open { display: flex; }
+  .bloqueio-box {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 44px 36px;
+    max-width: 420px; width: 90%;
+    text-align: center;
+    box-shadow: 0 16px 64px rgba(192,57,43,0.25);
+    border-top: 5px solid var(--red);
+    animation: popIn 0.25s cubic-bezier(.34,1.56,.64,1);
+    position: relative;
+  }
+  .bloqueio-icon-wrap {
+    width: 72px; height: 72px;
+    margin: 0 auto 18px;
+    background: #fde8e8;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 32px;
+    animation: lockShake 0.5s ease 0.2s both;
+  }
+  @keyframes lockShake {
+    0%,100% { transform: rotate(0); }
+    20%      { transform: rotate(-8deg); }
+    40%      { transform: rotate(8deg); }
+    60%      { transform: rotate(-5deg); }
+    80%      { transform: rotate(5deg); }
+  }
+  .bloqueio-title {
+    font-size: 20px; font-weight: 700;
+    color: var(--red);
+    margin-bottom: 10px;
+    line-height: 1.3;
+  }
+  .bloqueio-msg {
+    font-size: 14px; color: var(--text-muted);
+    line-height: 1.6; margin-bottom: 28px;
+  }
+  .bloqueio-msg strong { color: var(--navy); }
+  .btn-bloqueio-fechar {
+    background: var(--navy); color: #fff;
+    border: none; padding: 12px 32px;
+    border-radius: 50px;
+    font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+  }
+  .btn-bloqueio-fechar:hover { background: var(--red); transform: translateY(-1px); }
+
+  /* Stripe decorativa animada no topo quando bloqueado */
+  .bloqueio-stripe {
+    position: absolute; top: 0; left: 0; right: 0; height: 5px;
+    border-radius: 20px 20px 0 0;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--red) 0px, var(--red) 16px,
+      #f5a0a0 16px, #f5a0a0 32px
+    );
+    background-size: 200%;
+    animation: stripeMove 1s linear infinite;
+  }
+  @keyframes stripeMove {
+    0%   { background-position: 0 0; }
+    100% { background-position: 64px 0; }
+  }
 </style>
 <!-- ══ FIREBASE SDK ══ -->
 <script type="module">
@@ -623,7 +792,21 @@
   <div class="view" id="view-congregacoes">
     <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
       <div class="section-title" style="margin:0">Pedidos por Casa de Oração</div>
-      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+
+        <!-- ══ BOTÃO BLOQUEAR PEDIDOS ══ -->
+        <div class="lock-toggle-wrap liberado" id="lockToggleWrap" onclick="toggleBloqueio()">
+          <span class="lock-icon" id="lockIcon">🔓</span>
+          <div class="lock-switch">
+            <input type="checkbox" id="lockCheckbox">
+            <div class="lock-track"></div>
+          </div>
+          <div class="lock-label-wrap">
+            <div class="lock-label-title">Bloquear Pedidos</div>
+            <div class="lock-label-status" id="lockStatusLabel">● LIBERADO</div>
+          </div>
+        </div>
+
         <select class="filter-select" id="filter-congr-pdf" onchange="filterCongr()" style="min-width:180px;">
           <option value="">Todas as congregações</option>
         </select>
@@ -813,6 +996,43 @@
 // DATA
 // ══════════════════════════════════════════════
 const DATA = {"congregacoes": {"CENTRO": {"endereco": "AV. DR. ARMANDO PINTO, 651 - CRESCIÚMA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "AV. DR. ARMANDO PINTO, 651", "bairro": "CRESCIÚMA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "ESPERANÇA": {"endereco": "RUA PARAÍBA, 45 - JD. ESPERANÇA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA PARAÍBA, 45", "bairro": "JD. ESPERANÇA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "EUCALIPTOS": {"endereco": "RUA DAS HOTÊNCIAS, 84 - JD. EUCALIPTOS", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA DAS HOTÊNCIAS, 84", "bairro": "JD. EUCALIPTOS", "cep": "", "cnpj": "", "ie": "ISENTO"}, "LARANJEIRAS": {"endereco": "AV. PAULICÉIA, 212 - LARANJEIRAS", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "AV. PAULICÉIA, 212", "bairro": "LARANJEIRAS", "cep": "", "cnpj": "", "ie": "ISENTO"}, "MARCELINO": {"endereco": "RUA AGOSTINE DELLA TORRE, 162 - JD. MARCELINO", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA AGOSTINE DELLA TORRE, 162", "bairro": "JD. MARCELINO", "cep": "", "cnpj": "", "ie": "ISENTO"}, "PIEDADE": {"endereco": "RUA FRANCO DA ROCHA, 50 - SERPA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA FRANCO DA ROCHA, 50", "bairro": "SERPA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "PINHEIROS": {"endereco": "RUA EVA, 564 - VILA DOS PINHEIROS", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR 21-1181", "rua": "RUA EVA, 564", "bairro": "VILA DOS PINHEIROS", "cep": "07717-470", "cnpj": "29781823001589", "ie": "ISENTO"}, "SERPA": {"endereco": "RUA DR. FRANCO DA ROCHA, 49 - SERPA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA DR. FRANCO DA ROCHA, 49", "bairro": "SERPA", "cep": "", "cnpj": "", "ie": "ISENTO"}, "VITÓRIA": {"endereco": "RUA JOAQUIM MANOEL DE MACEDO - JD. VITÓRIA", "items": [], "total_geral": 0, "nome_ccb": "CONGREGAÇÃO CRISTÃ NO BRASIL - BR XX-XXXX", "rua": "RUA JOAQUIM MANOEL DE MACEDO", "bairro": "JD. VITÓRIA", "cep": "", "cnpj": "", "ie": "ISENTO"}}, "estoque": [{"descricao": "AGUA MINERAL COPO 200ML C/48 UM", "unidade": "CX", "preco": 19.8, "estq_inicial": 41.0, "estq_atual": 29.0, "val_atual": 574.2, "obs": "", "comprar": false}, {"descricao": "AGUA MINERAL COPO 200ML C/48 UM", "unidade": "CX", "preco": 18.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "COPO DESCARTÁVEL 150ML C/100UNI", "unidade": "PCT", "preco": 3.54, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "COPO DESCARTÁVEL 150ML C/100UNI", "unidade": "PCT", "preco": 2.98, "estq_inicial": 241.0, "estq_atual": 55.0, "val_atual": 163.9, "obs": "COMPRAR", "comprar": true}, {"descricao": "LUVA LATEX AMARELA (P)", "unidade": "PAR", "preco": 3.02, "estq_inicial": 82.0, "estq_atual": 76.0, "val_atual": 229.52, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (M)", "unidade": "PAR", "preco": 2.59, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (M)", "unidade": "PAR", "preco": 3.5, "estq_inicial": 281.0, "estq_atual": 270.0, "val_atual": 945.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (G)", "unidade": "PAR", "preco": 2.59, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA (G)", "unidade": "PAR", "preco": 2.98, "estq_inicial": 346.0, "estq_atual": 345.0, "val_atual": 1028.1, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA XG", "unidade": "PAR", "preco": 3.9, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA LATEX AMARELA XG", "unidade": "PAR", "preco": 3.5, "estq_inicial": 17.0, "estq_atual": 16.0, "val_atual": 56.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 20 LTS - 100UNI", "unidade": "PC", "preco": 8.04, "estq_inicial": 42.0, "estq_atual": 42.0, "val_atual": 337.68, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 30 LTS - 100UNI", "unidade": "PC", "preco": 10.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 40 LTS - 100UNI", "unidade": "PC", "preco": 12.43, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "SACO DE LIXO PRETO - 60 LTS - 100UNI", "unidade": "PC", "preco": 18.44, "estq_inicial": 30.0, "estq_atual": 28.0, "val_atual": 516.32, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 60 LTS - 100UNI BRANCO", "unidade": "PC", "preco": 27.9, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 27.9, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 110 LTS - 50UNI", "unidade": "PC", "preco": 19.76, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 110 LTS REFORÇADO 50UNI", "unidade": "UN", "preco": 24.0, "estq_inicial": 33.0, "estq_atual": 29.0, "val_atual": 696.0, "obs": "", "comprar": false}, {"descricao": "SACO DE LIXO PRETO - 100 LTS REFORÇADO 50UNI", "unidade": "UN", "preco": 40.15, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "PÁ DE LIXO", "unidade": "UN", "preco": 19.21, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 19.21, "obs": "", "comprar": false}, {"descricao": "BALDE MOPINHO AZUL C ALCA COD. BAMOAZ", "unidade": "UN", "preco": 25.07, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 100.28, "obs": "", "comprar": false}, {"descricao": "CABO CM140 AZUL AVULSO", "unidade": "UN", "preco": 20.67, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 124.02, "obs": "", "comprar": false}, {"descricao": "CABO CM140 1,40MX 22MM MANOPLA AZUL COD. CM140", "unidade": "UN", "preco": 24.05, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "REFIL 30CM MOPINHO LIQUIDO AZUL COD.BR30AZ", "unidade": "UN", "preco": 13.16, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "REFIL 30CM MOPINHO LIQUIDO AZUL COD.BR30AZ", "unidade": "UN", "preco": 12.65, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "TOALHEIRO AUTOCORTANTE (MECÂNICO) LITB217", "unidade": "UN", "preco": 167.55, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CABO 1,40MX 22MM MANOPLA AMARELA CM140A RODO", "unidade": "UN", "preco": 21.58, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 45CM AZUL S/ CABO RB45AZ", "unidade": "UN", "preco": 22.93, "estq_inicial": 2.0, "estq_atual": 1.0, "val_atual": 22.93, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 45CM AZUL S/ CABO RB45AZ", "unidade": "UN", "preco": 21.03, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BALDE MOPINHO VERMELHO C ALCA BAMOVM", "unidade": "UN", "preco": 25.75, "estq_inicial": 8.0, "estq_atual": 8.0, "val_atual": 206.0, "obs": "", "comprar": false}, {"descricao": "CABO 1,40MX 22MM MANOPLA VERMELHA COD.CM140M", "unidade": "UN", "preco": 22.18, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "CABO 1,40MX 22MM MANOPLA VERMELHA COD.CM140M", "unidade": "UN", "preco": 22.91, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "REFIL 30CM MOPINHO LIQUIDO VERMELHO BR30VM", "unidade": "UN", "preco": 14.9, "estq_inicial": 6.0, "estq_atual": 5.0, "val_atual": 74.5, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 35CM VERMELHO S/ CABO RN35VM", "unidade": "UN", "preco": 20.09, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 40.18, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA 35CM VERMELHO S/ CABO RN35VM", "unidade": "UN", "preco": 18.44, "estq_inicial": 1.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO DE LIMPEZA MOPINHO AMARELO CJ51AM", "unidade": "UN", "preco": 65.1, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "RODO BRALIMPIA DRY 45CM - AMARELO RN45AM", "unidade": "UN", "preco": 19.21, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT VERMELHO OUTRA MARCA", "unidade": "UN", "preco": 10.72, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 21.44, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT VERMELHO", "unidade": "UN", "preco": 12.25, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 49.0, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT AZUL", "unidade": "UN", "preco": 12.62, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SUPORTE LT AZUL", "unidade": "UN", "preco": 12.25, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 24.5, "obs": "", "comprar": false}, {"descricao": "LT EURO AMARELO", "unidade": "UN", "preco": 18.5, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO MOP PÓ PROFI 40CM CJ40P", "unidade": "UN", "preco": 73.26, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO MOP PÓ PROFI 40CM CJ40P", "unidade": "UN", "preco": 78.61, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CONJUNTO MOP PÓ PROFI 60CM CJ60P", "unidade": "UN", "preco": 94.37, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 188.74, "obs": "", "comprar": false}, {"descricao": "REFIL MOP PO 40 X 15CM PROFI RP400", "unidade": "UN", "preco": 18.98, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 18.98, "obs": "", "comprar": false}, {"descricao": "REFIL MOP PO 60 X 15CM PROFI RP600", "unidade": "UN", "preco": 27.08, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 27.08, "obs": "", "comprar": false}, {"descricao": "REFIL MOP PO 60 X 15CM PROFI RP600", "unidade": "UN", "preco": 30.54, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "ESPANADOR ELETROSTÁTICO ANGULAR EE60BRAZ", "unidade": "UN", "preco": 39.32, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 39.32, "obs": "", "comprar": false}, {"descricao": "ESPANADOR ELETROSTÁTICO ANGULAR EE60BRAZ(DEVOLVIDO)", "unidade": "UN", "preco": 0.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "PULVERIZADOR (BORRIFADOR) 500ML PV0500", "unidade": "UN", "preco": 7.27, "estq_inicial": 2.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "PULVERIZADOR (BORRIFADOR) 500ML PV0500", "unidade": "UN", "preco": 7.35, "estq_inicial": 12.0, "estq_atual": 12.0, "val_atual": 88.2, "obs": "", "comprar": false}, {"descricao": "PLACA SINAL COMPACTPISO MOLHADO", "unidade": "UN", "preco": 38.72, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 38.72, "obs": "", "comprar": false}, {"descricao": "TOALHEIRO AUTOCORTANTE (MECÂNICO) LITB200", "unidade": "PC", "preco": 147.9, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "DPCD DISPENSADOR DE COPOS 150 A 200ML COM DOSADOR (MECANICO)", "unidade": "UN", "preco": 31.41, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 62.82, "obs": "", "comprar": false}, {"descricao": "DPDA DISPENSER PARA DESCARTE COPO USADO 1 TUBO", "unidade": "UN", "preco": 24.36, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "DISPENSER PARA DESCARTE COPO USADO 2 TUBO", "unidade": "UN", "preco": 35.98, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 215.88, "obs": "", "comprar": false}, {"descricao": "PORTA PAPEL HIGIÊNICO ROLÃO 300 A 500 MTS (LDPR500C)", "unidade": "UN", "preco": 30.67, "estq_inicial": 5.0, "estq_atual": 5.0, "val_atual": 153.35, "obs": "", "comprar": false}, {"descricao": "SABONETEIRA ÁLCOOL COM RESERVATÓRIO DROPY", "unidade": "UN", "preco": 31.3, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 62.6, "obs": "", "comprar": false}, {"descricao": "SABONETEIRA ESPUMA COM RESERVATÓRIO LDSES850C DROPY", "unidade": "UN", "preco": 38.59, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 154.36, "obs": "", "comprar": false}, {"descricao": "CESTO 30X24 14L CINZA TAMPA BASC CS24PR", "unidade": "UN", "preco": 37.16, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 74.32, "obs": "", "comprar": false}, {"descricao": "CESTO 60 LITROS", "unidade": "UN", "preco": 60.9, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "PAPEL HIGIÊNICO ROLÃO 10X300 8 UN [FRACIONADA: 1UN]", "unidade": "UN", "preco": 8.11, "estq_inicial": 47.0, "estq_atual": -4.0, "val_atual": -32.44, "obs": "", "comprar": false}, {"descricao": "PAPEL TOALHA BOBINA 6X20X200MTS [FRACIONADA: 1 UN]", "unidade": "UN", "preco": 14.58, "estq_inicial": 58.0, "estq_atual": 11.0, "val_atual": 160.38, "obs": "", "comprar": false}, {"descricao": "FIBRA MACIA (BRANCA)", "unidade": "UN", "preco": 2.22, "estq_inicial": 14.0, "estq_atual": 14.0, "val_atual": 31.08, "obs": "", "comprar": false}, {"descricao": "FIBRA MACIA (BRANCA)", "unidade": "UN", "preco": 1.95, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FIBRA LT SERVICO PESADO 3M", "unidade": "UN", "preco": 3.49, "estq_inicial": 40.0, "estq_atual": 36.0, "val_atual": 125.64, "obs": "", "comprar": false}, {"descricao": "FIBRA LT SERVICO PESADO 3M", "unidade": "UN", "preco": 3.02, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FIBRA LT SERVICO USO GERAL 3M", "unidade": "UN", "preco": 2.12, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FLANELA 28X38 LARANJA UNID", "unidade": "UN", "preco": 1.15, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "FLANELA 28X38 LARANJA UNID", "unidade": "UN", "preco": 1.08, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "COMPRAR", "comprar": true}, {"descricao": "SACO PANO XADREZ 40X62", "unidade": "UN", "preco": 2.51, "estq_inicial": 30.0, "estq_atual": 15.0, "val_atual": 37.65, "obs": "", "comprar": false}, {"descricao": "SABONETE SENSY HERBAL/FLORAL ESPUMA 5L [FRACIONADA: 5 LT]", "unidade": "GL", "preco": 42.3, "estq_inicial": 8.0, "estq_atual": 7.0, "val_atual": 296.1, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPA VIDRO 1L", "unidade": "LT", "preco": 20.0, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 80.0, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPA VIDRO 1L", "unidade": "LT", "preco": 17.44, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPADOR GERAL AÇAÍ CONCENTRADO 1:300 [FRAC. 5 LT]", "unidade": "GL", "preco": 76.11, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "KLYO LIMPADOR GERAL AÇAÍ CONCENTRADO 1:300 [FRAC. 5 LT]", "unidade": "GL", "preco": 87.44, "estq_inicial": 5.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "KLYO FLOOR LIMPADOR PESADA RENKO [FRACIONADA: 5 LT]", "unidade": "LT", "preco": 21.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "MIRAX DESINFETANTE ALTA DILUIÇAO 1:300 M(FRAC.ML)", "unidade": "LT", "preco": 18.3, "estq_inicial": 19.0, "estq_atual": 16.0, "val_atual": 292.8, "obs": "", "comprar": false}, {"descricao": "MIRAX DESINFETANTE ALTA DILUIÇAO 1:300 M(FRAC.ML)", "unidade": "LT", "preco": 16.3, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "ALCOOL GEL 70º 5 L(MÍNIMO 5 LITROS)", "unidade": "GL", "preco": 37.69, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 37.69, "obs": "COMPRAR", "comprar": true}, {"descricao": "ÁLCOOL LÍQUIDO 70º INPM 1LT", "unidade": "LT", "preco": 7.0, "estq_inicial": 41.0, "estq_atual": 40.0, "val_atual": 280.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 35", "unidade": "PAR", "preco": 93.5, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 36", "unidade": "PAR", "preco": 82.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 37", "unidade": "PAR", "preco": 82.0, "estq_inicial": -1.0, "estq_atual": -1.0, "val_atual": -82.0, "obs": "LARANJEIRAS", "comprar": false}, {"descricao": "BOTAS BRANCAS 38", "unidade": "PAR", "preco": 81.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 39", "unidade": "PAR", "preco": 80.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 40", "unidade": "PAR", "preco": 93.5, "estq_inicial": -2.0, "estq_atual": -3.0, "val_atual": -280.5, "obs": "1 SERPA", "comprar": false}, {"descricao": "BOTAS BRANCAS 41", "unidade": "PAR", "preco": 93.5, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 44 (43)", "unidade": "PAR", "preco": 82.0, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 164.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS RETORNADA DE CASAS DE ORAÇÃO", "unidade": "PAR", "preco": 0.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "BOTAS BRANCAS 35, 36, 37, 38, 39", "unidade": "PAR", "preco": 0.0, "estq_inicial": 3.0, "estq_atual": 3.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "SAPATO BRANCO 42 E 35", "unidade": "PAR", "preco": 0.0, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "GATILHO", "unidade": "UN", "preco": 4.27, "estq_inicial": 11.0, "estq_atual": 11.0, "val_atual": 46.97, "obs": "", "comprar": false}, {"descricao": "P0NTEIRA", "unidade": "UN", "preco": 5.83, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "OCULOS DE SEGURANÇA", "unidade": "UN", "preco": 8.4, "estq_inicial": 0.0, "estq_atual": -2.0, "val_atual": -16.8, "obs": "COMPRAR", "comprar": true}, {"descricao": "TELA ODORIZADORA", "unidade": "UN", "preco": 3.59, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "TELA ODORIZADORA", "unidade": "UN", "preco": 4.8, "estq_inicial": 25.0, "estq_atual": 21.0, "val_atual": 100.8, "obs": "", "comprar": false}, {"descricao": "VALVULA LIQUIDA", "unidade": "UN", "preco": 2.9, "estq_inicial": 7.0, "estq_atual": 7.0, "val_atual": 20.3, "obs": "", "comprar": false}, {"descricao": "VALVULA ESPUMA", "unidade": "UN", "preco": 11.12, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 44.48, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA P", "unidade": "PAR", "preco": 8.5, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 34.0, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA M", "unidade": "PAR", "preco": 8.6, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA M", "unidade": "PAR", "preco": 8.5, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 34.0, "obs": "", "comprar": false}, {"descricao": "LUVA NITRILICA G", "unidade": "PAR", "preco": 8.5, "estq_inicial": 4.0, "estq_atual": 4.0, "val_atual": 34.0, "obs": "", "comprar": false}, {"descricao": "MASCARA DESC. C/50", "unidade": "PC", "preco": 10.2, "estq_inicial": 5.0, "estq_atual": 5.0, "val_atual": 51.0, "obs": "", "comprar": false}, {"descricao": "MASCARA DESC. C/100", "unidade": "PC", "preco": 13.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "TUBO PORTA COPO", "unidade": "UN", "preco": 5.61, "estq_inicial": 5.0, "estq_atual": 5.0, "val_atual": 28.05, "obs": "", "comprar": false}, {"descricao": "COPO MEDIDA", "unidade": "UN", "preco": 4.17, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 8.34, "obs": "", "comprar": false}, {"descricao": "ESCOVA SANITÁRIA", "unidade": "UN", "preco": 14.8, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 88.8, "obs": "", "comprar": false}, {"descricao": "VASSOURA", "unidade": "UN", "preco": 10.29, "estq_inicial": 1.0, "estq_atual": -3.0, "val_atual": -30.87, "obs": "COMPRAR", "comprar": true}, {"descricao": "CABO CE140", "unidade": "UN", "preco": 24.49, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 146.94, "obs": "", "comprar": false}, {"descricao": "CABO CE140M", "unidade": "UN", "preco": 24.49, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CABO CL140", "unidade": "UN", "preco": 23.94, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 23.94, "obs": "", "comprar": false}, {"descricao": "CABO CL140E", "unidade": "UN", "preco": 23.94, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 23.94, "obs": "", "comprar": false}, {"descricao": "COMB35", "unidade": "UN", "preco": 48.18, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "COMB35", "unidade": "UN", "preco": 54.47, "estq_inicial": 2.0, "estq_atual": 2.0, "val_atual": 108.94, "obs": "", "comprar": false}, {"descricao": "TAMPA DE LIXO", "unidade": "UN", "preco": 9.84, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "ESPREMEDOR PARA BALDE MOPINHO", "unidade": "UN", "preco": 11.33, "estq_inicial": 6.0, "estq_atual": 6.0, "val_atual": 67.98, "obs": "", "comprar": false}, {"descricao": "AVENTAL", "unidade": "UN", "preco": 14.0, "estq_inicial": 7.0, "estq_atual": 7.0, "val_atual": 98.0, "obs": "", "comprar": false}, {"descricao": "EXTENSOR 9 METROS", "unidade": "UN", "preco": 206.6, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "AVENTAL E.B.I", "unidade": "UN", "preco": 15.0, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "RODO TWITER", "unidade": "UN", "preco": 72.94, "estq_inicial": 0.0, "estq_atual": 0.0, "val_atual": 0.0, "obs": "", "comprar": false}, {"descricao": "CESTO23L BRANCO", "unidade": "UN", "preco": 51.78, "estq_inicial": 1.0, "estq_atual": 1.0, "val_atual": 51.78, "obs": "", "comprar": false}, {"descricao": "SUPORTE PARA RODOS E VASSOURAS", "unidade": "UN", "preco": 0, "estq_inicial": 0, "estq_atual": -2.0, "val_atual": 0, "obs": "COMPRAR", "comprar": true}, {"descricao": "MOP PÓ PAREDE", "unidade": "UN", "preco": 0, "estq_inicial": 0, "estq_atual": -2.0, "val_atual": 0, "obs": "COMPRAR", "comprar": true}], "pedidos": []};
+
+// ══════════════════════════════════════════════
+// ESTADO: BLOQUEIO DE PEDIDOS
+// ══════════════════════════════════════════════
+let pedidosBloqueados = false;
+
+function toggleBloqueio() {
+  pedidosBloqueados = !pedidosBloqueados;
+  const wrap   = document.getElementById('lockToggleWrap');
+  const chk    = document.getElementById('lockCheckbox');
+  const icon   = document.getElementById('lockIcon');
+  const status = document.getElementById('lockStatusLabel');
+
+  chk.checked = pedidosBloqueados;
+
+  if(pedidosBloqueados) {
+    wrap.classList.remove('liberado');
+    wrap.classList.add('bloqueado');
+    icon.textContent = '🔒';
+    status.textContent = '● BLOQUEADO';
+    showToast('🔒 Pedidos bloqueados pelo administrador!');
+  } else {
+    wrap.classList.remove('bloqueado');
+    wrap.classList.add('liberado');
+    icon.textContent = '🔓';
+    status.textContent = '● LIBERADO';
+    showToast('🔓 Pedidos liberados!');
+  }
+}
+
+function showBloqueioModal() {
+  document.getElementById('bloqueioModal').classList.add('open');
+}
+
+function fecharBloqueioModal() {
+  document.getElementById('bloqueioModal').classList.remove('open');
+}
 
 // ══════════════════════════════════════════════
 // HELPERS
@@ -1487,6 +1707,12 @@ function focusOrderRow(rowId) {
 }
 
 function showConfirmPedido() {
+  // ── VERIFICAÇÃO DE BLOQUEIO ──
+  if(pedidosBloqueados) {
+    showBloqueioModal();
+    return;
+  }
+
   const casa  = document.getElementById('oCasa').value;
   const resp  = document.getElementById('oResp').value.trim();
   const valid = orderRows.filter(r => r.selecionado && r.descricao && r.quantidade > 0);
@@ -1594,6 +1820,20 @@ buildCadastro();
       <button class="btn-cancel-modal" onclick="fecharSenhaModal()">Cancelar</button>
       <button class="btn-save" onclick="confirmarSenha()">🔓 Entrar</button>
     </div>
+  </div>
+</div>
+
+<!-- ══ MODAL BLOQUEIO DE PEDIDOS ══ -->
+<div class="bloqueio-overlay" id="bloqueioModal">
+  <div class="bloqueio-box">
+    <div class="bloqueio-stripe"></div>
+    <div class="bloqueio-icon-wrap">🔒</div>
+    <div class="bloqueio-title">Sistema Bloqueado</div>
+    <div class="bloqueio-msg">
+      O sistema está <strong>bloqueado para novos pedidos</strong>.<br>
+      Por favor, aguarde a liberação do administrador para realizar novos lançamentos.
+    </div>
+    <button class="btn-bloqueio-fechar" onclick="fecharBloqueioModal()">Entendido</button>
   </div>
 </div>
 
