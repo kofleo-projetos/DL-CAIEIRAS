@@ -336,9 +336,40 @@
   .stock-low td:first-child { border-left: 3px solid var(--gold); }
   .stock-ok td:first-child { border-left: 3px solid var(--green); }
 
+  /* ── Charts ── */
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+  .chart-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 20px 20px 16px;
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 700; color: var(--navy);
+    margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+    text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .chart-canvas-wrap { position: relative; }
+
+  /* ── Filtros Dashboard ── */
+  .dash-filter-row {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    background: var(--card); border-radius: var(--radius-sm);
+    padding: 12px 16px; margin-bottom: 20px;
+    box-shadow: var(--shadow); border-left: 4px solid var(--blue);
+  }
+  .dash-filter-row label { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .btn-pdf-rel { background: var(--navy); color: #fff; border: none; padding: 8px 18px; border-radius: var(--radius-sm); font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: background 0.2s; }
+  .btn-pdf-rel:hover { background: var(--navy-mid); }
+
   /* ── Print ── */
   @media print {
-    header, nav, .tab-btn, .search-bar, .filter-row, footer { display: none !important; }
+    header, nav, .tab-btn, .search-bar, .filter-row, footer, .dash-filter-row, .btn-pdf-rel { display: none !important; }
     .view { display: block !important; }
     main { padding: 0; }
     .ci-actions { display: none !important; }
@@ -640,6 +671,10 @@
     100% { background-position: 64px 0; }
   }
 </style>
+<!-- ══ CHART.JS ══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- ══ CHART.JS DATALABELS PLUGIN ══ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <!-- ══ FIREBASE SDK ══ -->
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -664,6 +699,7 @@
         congregacoes: DATA.congregacoes,
         estoque: DATA.estoque,
         pedidos: DATA.pedidos,
+        bloqueado: pedidosBloqueados,
         atualizado: new Date().toISOString()
       });
       console.log("✅ Firebase: dados salvos");
@@ -681,6 +717,11 @@
         if(d.congregacoes) DATA.congregacoes = d.congregacoes;
         if(d.estoque)      DATA.estoque      = d.estoque;
         if(d.pedidos)      DATA.pedidos      = d.pedidos;
+        // ── Restaurar estado do bloqueio ──
+        if(typeof d.bloqueado === 'boolean' && d.bloqueado !== pedidosBloqueados) {
+          pedidosBloqueados = d.bloqueado;
+          applyBloqueioUI();
+        }
         IGREJAS = Object.keys(DATA.congregacoes).sort();
         buildDashboard(); buildCongregacoes(); buildEstoque();
         buildPedidos();   buildCompras();     buildCadastro();
@@ -702,6 +743,12 @@
       if(d.congregacoes) DATA.congregacoes = d.congregacoes;
       if(d.estoque)      DATA.estoque      = d.estoque;
       if(d.pedidos)      DATA.pedidos      = d.pedidos;
+      // ── Sincronizar bloqueio em tempo real ──
+      if(typeof d.bloqueado === 'boolean' && d.bloqueado !== pedidosBloqueados) {
+        pedidosBloqueados = d.bloqueado;
+        applyBloqueioUI();
+        showToast(pedidosBloqueados ? '🔒 Sistema bloqueado remotamente!' : '🔓 Sistema liberado remotamente!');
+      }
       IGREJAS = Object.keys(DATA.congregacoes).sort();
       buildDashboard(); buildCongregacoes(); buildEstoque();
       buildPedidos();   buildCompras();     buildCadastro();
@@ -748,7 +795,55 @@
   <div class="view" id="view-dashboard">
     <div class="kpi-row" id="kpi-row"></div>
     <div class="alert-box" id="alert-compras"></div>
-    <div class="section-title">Distribuição por Congregação — Março 2026</div>
+
+    <!-- Filtros do Dashboard -->
+    <div class="dash-filter-row">
+      <div>
+        <label>Filtrar por Casa de Oração</label>
+        <select class="filter-select" id="dash-filter-casa" onchange="buildDashboard()" style="margin-top:4px;min-width:200px;">
+          <option value="">Todas as casas</option>
+        </select>
+      </div>
+      <div>
+        <label>Mês</label>
+        <select class="filter-select" id="dash-filter-mes" onchange="buildDashboard()" style="margin-top:4px;">
+          <option value="">Todos</option>
+          <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+          <option value="03" selected>Março</option><option value="04">Abril</option>
+          <option value="05">Maio</option><option value="06">Junho</option>
+          <option value="07">Julho</option><option value="08">Agosto</option>
+          <option value="09">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:flex-end;">
+        <button class="btn-pdf-rel" onclick="exportRelatorio()">📄 Relatório Geral PDF</button>
+        <button class="btn-pdf-rel" style="background:var(--green);" onclick="exportRelatorioItem()">📦 Relatório por Item PDF</button>
+      </div>
+    </div>
+
+    <!-- Gráficos -->
+    <div class="section-title">📊 Análise Visual</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">🏛️ Gastos por Casa de Oração</div>
+        <div class="chart-canvas-wrap"><canvas id="chartCasas" height="240"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📦 Produtos Mais Distribuídos (Top 8)</div>
+        <div class="chart-canvas-wrap"><canvas id="chartProdutos" height="240"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📊 Distribuição % por Casa de Oração</div>
+        <div class="chart-canvas-wrap"><canvas id="chartPizzaCasas" height="240"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">📋 Distribuição % dos Produtos (Top 8)</div>
+        <div class="chart-canvas-wrap"><canvas id="chartPizzaProd" height="240"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">Distribuição por Congregação</div>
     <div class="table-wrap">
       <table>
         <thead>
@@ -757,6 +852,7 @@
             <th>Endereço</th>
             <th style="text-align:right">Itens</th>
             <th style="text-align:right">Total (R$)</th>
+            <th style="text-align:right">% do Total</th>
             <th>Status</th>
           </tr>
         </thead>
@@ -766,7 +862,7 @@
             <td colspan="2" style="padding:12px 14px;color:var(--navy)">TOTAL GERAL</td>
             <td class="td-num td-bold" id="dash-total-items"></td>
             <td class="td-num td-bold" style="color:var(--green)" id="dash-total-val"></td>
-            <td></td>
+            <td></td><td></td>
           </tr>
         </tfoot>
       </table>
@@ -780,6 +876,7 @@
             <th>Unidade</th>
             <th style="text-align:right">Qtd Total Distribuída</th>
             <th style="text-align:right">Valor Total (R$)</th>
+            <th style="text-align:right">% do Total</th>
             <th style="text-align:right">Nº Congregações</th>
           </tr>
         </thead>
@@ -1002,28 +1099,27 @@ const DATA = {"congregacoes": {"CENTRO": {"endereco": "AV. DR. ARMANDO PINTO, 65
 // ══════════════════════════════════════════════
 let pedidosBloqueados = false;
 
-function toggleBloqueio() {
-  pedidosBloqueados = !pedidosBloqueados;
+function applyBloqueioUI() {
   const wrap   = document.getElementById('lockToggleWrap');
   const chk    = document.getElementById('lockCheckbox');
   const icon   = document.getElementById('lockIcon');
   const status = document.getElementById('lockStatusLabel');
-
+  if(!wrap) return;
   chk.checked = pedidosBloqueados;
-
   if(pedidosBloqueados) {
-    wrap.classList.remove('liberado');
-    wrap.classList.add('bloqueado');
-    icon.textContent = '🔒';
-    status.textContent = '● BLOQUEADO';
-    showToast('🔒 Pedidos bloqueados pelo administrador!');
+    wrap.classList.remove('liberado'); wrap.classList.add('bloqueado');
+    icon.textContent = '🔒'; status.textContent = '● BLOQUEADO';
   } else {
-    wrap.classList.remove('bloqueado');
-    wrap.classList.add('liberado');
-    icon.textContent = '🔓';
-    status.textContent = '● LIBERADO';
-    showToast('🔓 Pedidos liberados!');
+    wrap.classList.remove('bloqueado'); wrap.classList.add('liberado');
+    icon.textContent = '🔓'; status.textContent = '● LIBERADO';
   }
+}
+
+function toggleBloqueio() {
+  pedidosBloqueados = !pedidosBloqueados;
+  applyBloqueioUI();
+  showToast(pedidosBloqueados ? '🔒 Pedidos bloqueados!' : '🔓 Pedidos liberados!');
+  if(window.fbSave) window.fbSave();
 }
 
 function showBloqueioModal() {
@@ -1056,6 +1152,7 @@ function rebuildIgrejaSelects() {
     fPdf.innerHTML = '<option value="">Todas as congregações</option>' +
       IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
   }
+  rebuildDashFilterSelect();
 }
 
 function showTab(id) {
@@ -1249,16 +1346,67 @@ function renderChurches() {
 // ══════════════════════════════════════════════
 // DASHBOARD
 // ══════════════════════════════════════════════
+let _chartCasas = null, _chartProd = null, _chartPizzaCasas = null, _chartPizzaProd = null;
+
+const CHART_COLORS = [
+  '#3b7fc4','#e6a817','#27ae60','#c0392b','#8e44ad','#16a085','#d35400','#2980b9',
+  '#f39c12','#1abc9c','#e74c3c','#9b59b6','#2ecc71','#e67e22','#3498db','#95a5a6'
+];
+
+function rebuildDashFilterSelect() {
+  const sel = document.getElementById('dash-filter-casa');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">Todas as casas</option>' +
+    IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+}
+
+function destroyChart(c) { if(c) { try { c.destroy(); } catch(e){} } return null; }
+
 function buildDashboard() {
+  rebuildDashFilterSelect();
+  const filtCasa = document.getElementById('dash-filter-casa')?.value || '';
+  const filtMes  = document.getElementById('dash-filter-mes')?.value  || '';
+
   const congrs = DATA.congregacoes;
-  const names = Object.keys(congrs);
-  const totalDistrib = names.reduce((s, n) => s + congrs[n].total_geral, 0);
+  let names = Object.keys(congrs);
+  if(filtCasa) names = names.filter(n => n === filtCasa);
+
+  // Filtrar pedidos por mês se necessário
+  // Para items de congregação não temos data, usamos os pedidos para a filtragem
+  // Se filtMes vazio, usa tudo de DATA.congregacoes; se não, recalcula do DATA.pedidos
+  let congrData = {};
+  if(filtMes) {
+    // Recalcular a partir de DATA.pedidos filtrados pelo mês
+    names.forEach(n => { congrData[n] = { endereco: congrs[n]?.endereco||'', items: {}, total_geral: 0 }; });
+    DATA.pedidos.forEach(function(p) {
+      if(!names.includes(p.congregacao)) return;
+      // data formato dd/mm/yyyy
+      const parts = (p.data||'').split('/');
+      const mes = parts[1] || '';
+      if(filtMes && mes !== filtMes) return;
+      const c = congrData[p.congregacao];
+      if(!c) return;
+      if(!c.items[p.descricao]) c.items[p.descricao] = { unidade:p.unidade, preco:p.preco, saida:0, total:0 };
+      c.items[p.descricao].saida += p.quantidade;
+      c.items[p.descricao].total += p.preco * p.quantidade;
+      c.total_geral += p.preco * p.quantidade;
+    });
+    // Converter items de obj para array
+    Object.keys(congrData).forEach(n => {
+      congrData[n].items = Object.entries(congrData[n].items).map(([desc, v]) => Object.assign({descricao:desc}, v));
+    });
+  } else {
+    names.forEach(n => { congrData[n] = congrs[n]; });
+  }
+
+  const totalDistrib = names.reduce((s,n) => s + (congrData[n]?.total_geral||0), 0);
   const needBuy = DATA.estoque.filter(e => e.comprar || e.estq_atual < 0).length;
   const estoqueVal = DATA.estoque.reduce((s, e) => s + Math.max(0, e.val_atual), 0);
-  const congrAtivas = names.filter(n => congrs[n].items.length > 0).length;
+  const congrAtivas = names.filter(n => (congrData[n]?.items||[]).length > 0).length;
 
   document.getElementById('kpi-row').innerHTML =
-    '<div class="kpi-card"><div class="kpi-label">Total Distribuído</div><div class="kpi-value">' + R$(totalDistrib) + '</div><div class="kpi-sub">Mês atual</div></div>' +
+    '<div class="kpi-card"><div class="kpi-label">Total Distribuído</div><div class="kpi-value">' + R$(totalDistrib) + '</div><div class="kpi-sub">' + (filtMes ? 'Mês filtrado' : 'Todos os meses') + '</div></div>' +
     '<div class="kpi-card gold"><div class="kpi-label">Congregações Ativas</div><div class="kpi-value">' + congrAtivas + ' / ' + names.length + '</div><div class="kpi-sub">com pedidos registrados</div></div>' +
     '<div class="kpi-card green"><div class="kpi-label">Valor em Estoque</div><div class="kpi-value">' + R$(estoqueVal) + '</div><div class="kpi-sub">' + DATA.estoque.filter(e=>e.estq_atual>0).length + ' itens disponíveis</div></div>' +
     '<div class="kpi-card red"><div class="kpi-label">Itens p/ Comprar</div><div class="kpi-value">' + needBuy + '</div><div class="kpi-sub">marcados na planilha</div></div>';
@@ -1269,29 +1417,216 @@ function buildDashboard() {
     ? '<h3>⚠️ ' + uniqueBuy.length + ' itens precisam de reposição</h3><div class="alert-list">' + uniqueBuy.map(d => '<div class="alert-item">📦 ' + d + '</div>').join('') + '</div>'
     : '<h3 style="color:var(--green)">✅ Estoque em dia — nenhum item crítico</h3>';
 
+  // ── Tabela congregações ──
   let rows = '', ti = 0, tv = 0;
-  names.sort((a,b) => congrs[b].total_geral - congrs[a].total_geral).forEach(n => {
-    const c = congrs[n], cnt = c.items.length, tot = c.total_geral;
+  names.sort((a,b) => (congrData[b]?.total_geral||0) - (congrData[a]?.total_geral||0)).forEach(n => {
+    const c = congrData[n] || {}; const cnt = (c.items||[]).length; const tot = c.total_geral||0;
     ti += cnt; tv += tot;
-    rows += '<tr><td class="td-bold">⛪ ' + n + '</td><td style="font-size:12px;color:var(--text-muted)">' + (c.endereco||'') + '</td><td class="td-num">' + cnt + '</td><td class="td-num td-bold">' + R$(tot) + '</td><td>' + (cnt > 0 ? '<span class="badge badge-green">Distribuído</span>' : '<span class="badge badge-blue">Sem pedido</span>') + '</td></tr>';
+    const pct = totalDistrib > 0 ? ((tot/totalDistrib)*100).toFixed(1) + '%' : '—';
+    rows += '<tr><td class="td-bold">⛪ ' + n + '</td><td style="font-size:12px;color:var(--text-muted)">' + (c.endereco||'') + '</td><td class="td-num">' + cnt + '</td><td class="td-num td-bold">' + R$(tot) + '</td><td class="td-num" style="color:var(--blue);font-weight:600">' + pct + '</td><td>' + (cnt > 0 ? '<span class="badge badge-green">Distribuído</span>' : '<span class="badge badge-blue">Sem pedido</span>') + '</td></tr>';
   });
   document.getElementById('dash-congr-table').innerHTML = rows;
   document.getElementById('dash-total-items').textContent = ti;
   document.getElementById('dash-total-val').textContent = R$(tv);
 
+  // ── Mapa de produtos ──
   const prodMap = {};
   names.forEach(n => {
-    congrs[n].items.forEach(it => {
+    (congrData[n]?.items||[]).forEach(it => {
       if(!prodMap[it.descricao]) prodMap[it.descricao] = { unidade:it.unidade, qtd:0, val:0, congrs:new Set() };
       prodMap[it.descricao].qtd += it.saida;
       prodMap[it.descricao].val += it.total;
       prodMap[it.descricao].congrs.add(n);
     });
   });
+  const totalProdVal = Object.values(prodMap).reduce((s,v) => s + v.val, 0);
   const sorted = Object.entries(prodMap).sort((a,b) => b[1].qtd - a[1].qtd).slice(0,10);
-  document.getElementById('top-products-table').innerHTML = sorted.map(([desc, v], i) =>
-    '<tr><td>' + (i===0?'🥇':i===1?'🥈':i===2?'🥉':'  ') + ' <span class="td-bold">' + desc + '</span></td><td><span class="badge badge-blue">' + v.unidade + '</span></td><td class="td-num td-bold">' + N(v.qtd) + '</td><td class="td-num">' + R$(v.val) + '</td><td class="td-num">' + v.congrs.size + '</td></tr>'
-  ).join('');
+  document.getElementById('top-products-table').innerHTML = sorted.map(([desc, v], i) => {
+    const pct = totalProdVal > 0 ? ((v.val/totalProdVal)*100).toFixed(1) + '%' : '—';
+    return '<tr><td>' + (i===0?'🥇':i===1?'🥈':i===2?'🥉':'  ') + ' <span class="td-bold">' + desc + '</span></td><td><span class="badge badge-blue">' + v.unidade + '</span></td><td class="td-num td-bold">' + N(v.qtd) + '</td><td class="td-num">' + R$(v.val) + '</td><td class="td-num" style="color:var(--blue);font-weight:600">' + pct + '</td><td class="td-num">' + v.congrs.size + '</td></tr>';
+  }).join('');
+
+  // ── GRÁFICOS ──
+  _chartCasas = destroyChart(_chartCasas);
+  _chartProd  = destroyChart(_chartProd);
+  _chartPizzaCasas = destroyChart(_chartPizzaCasas);
+  _chartPizzaProd  = destroyChart(_chartPizzaProd);
+
+  // Dados para gráficos
+  const casasLabels = names.sort((a,b)=>(congrData[b]?.total_geral||0)-(congrData[a]?.total_geral||0)).slice(0,10);
+  const casasVals   = casasLabels.map(n => +(congrData[n]?.total_geral||0).toFixed(2));
+
+  const top8Prod = Object.entries(prodMap).sort((a,b)=>b[1].qtd-a[1].qtd).slice(0,8);
+  const prodLabels = top8Prod.map(([d]) => d.length > 22 ? d.slice(0,20)+'…' : d);
+  const prodQtds   = top8Prod.map(([,v]) => v.qtd);
+  const prodVals   = top8Prod.map(([,v]) => +v.val.toFixed(2));
+
+  // Registrar o plugin datalabels globalmente (Chart.js 4.x)
+  if(window.ChartDataLabels) {
+    Chart.register(ChartDataLabels);
+  }
+
+  // Bar: gastos por casa — com rótulos de valor acima das barras
+  const ctxCasas = document.getElementById('chartCasas')?.getContext('2d');
+  if(ctxCasas && casasLabels.length) {
+    _chartCasas = new Chart(ctxCasas, {
+      type: 'bar',
+      data: {
+        labels: casasLabels.map(l => l.length>16 ? l.slice(0,14)+'…' : l),
+        datasets: [{ label:'Total (R$)', data: casasVals, backgroundColor: CHART_COLORS.slice(0,casasLabels.length), borderRadius: 6, borderSkipped: false }]
+      },
+      options: {
+        responsive: true,
+        layout: { padding: { top: 22 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' R$ ' + ctx.parsed.y.toLocaleString('pt-BR',{minimumFractionDigits:2}) } },
+          datalabels: {
+            anchor: 'end', align: 'end',
+            formatter: v => 'R$\n' + v.toLocaleString('pt-BR',{minimumFractionDigits:2}),
+            font: { size: 9, weight: '700' },
+            color: '#1a3a5c',
+            clip: false
+          }
+        },
+        scales: {
+          y: { ticks: { callback: v => 'R$ '+v.toLocaleString('pt-BR') }, grid: { color:'#f0f0f0' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Bar horizontal: produtos mais distribuídos (por qtd) — com rótulos de quantidade
+  const ctxProd = document.getElementById('chartProdutos')?.getContext('2d');
+  if(ctxProd && prodLabels.length) {
+    _chartProd = new Chart(ctxProd, {
+      type: 'bar',
+      data: {
+        labels: prodLabels,
+        datasets: [{ label:'Qtd', data: prodQtds, backgroundColor: CHART_COLORS.slice(0,prodLabels.length), borderRadius: 5, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        layout: { padding: { right: 48 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.parsed.x.toLocaleString('pt-BR') + ' un' } },
+          datalabels: {
+            anchor: 'end', align: 'end',
+            formatter: v => v.toLocaleString('pt-BR') + ' un',
+            font: { size: 9, weight: '700' },
+            color: '#1a3a5c',
+            clip: false
+          }
+        },
+        scales: {
+          x: { grid: { color:'#f0f0f0' } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Bar horizontal: % por casa de oração (substituindo pizza)
+  const ctxPizzaCasas = document.getElementById('chartPizzaCasas')?.getContext('2d');
+  if(ctxPizzaCasas && casasLabels.length && totalDistrib > 0) {
+    const pctCasas = casasVals.map(v => totalDistrib > 0 ? +((v/totalDistrib)*100).toFixed(1) : 0);
+    _chartPizzaCasas = new Chart(ctxPizzaCasas, {
+      type: 'bar',
+      data: {
+        labels: casasLabels.map(l => l.length>18 ? l.slice(0,16)+'…' : l),
+        datasets: [{
+          label: '% Total',
+          data: pctCasas,
+          backgroundColor: CHART_COLORS.slice(0, casasLabels.length),
+          borderRadius: 5,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        layout: { padding: { right: 52 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: ctx => {
+              const pct = ctx.parsed.x.toFixed(1)+'%';
+              const val = casasVals[ctx.dataIndex];
+              return ' ' + pct + '  —  R$ ' + val.toLocaleString('pt-BR',{minimumFractionDigits:2});
+            }
+          }},
+          datalabels: {
+            anchor: 'end', align: 'end',
+            formatter: v => v.toFixed(1) + '%',
+            font: { size: 9, weight: '700' },
+            color: '#1a3a5c',
+            clip: false
+          }
+        },
+        scales: {
+          x: {
+            max: Math.min(100, Math.max(...pctCasas) * 1.25),
+            grid: { color:'#f0f0f0' },
+            ticks: { callback: v => v + '%' }
+          },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // Bar horizontal: % por produto (substituindo pizza)
+  const ctxPizzaProd = document.getElementById('chartPizzaProd')?.getContext('2d');
+  if(ctxPizzaProd && top8Prod.length && totalProdVal > 0) {
+    const prodPctVals = prodVals.map(v => totalProdVal > 0 ? +((v/totalProdVal)*100).toFixed(1) : 0);
+    const prodPctLabels = top8Prod.map(([d]) => d.length>18 ? d.slice(0,16)+'…' : d);
+    _chartPizzaProd = new Chart(ctxPizzaProd, {
+      type: 'bar',
+      data: {
+        labels: prodPctLabels,
+        datasets: [{
+          label: '% Total',
+          data: prodPctVals,
+          backgroundColor: CHART_COLORS.slice(0, top8Prod.length),
+          borderRadius: 5,
+          borderSkipped: false
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        layout: { padding: { right: 52 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: {
+            label: ctx => {
+              const pct = ctx.parsed.x.toFixed(1)+'%';
+              const val = prodVals[ctx.dataIndex];
+              return ' ' + pct + '  —  R$ ' + val.toLocaleString('pt-BR',{minimumFractionDigits:2});
+            }
+          }},
+          datalabels: {
+            anchor: 'end', align: 'end',
+            formatter: v => v.toFixed(1) + '%',
+            font: { size: 9, weight: '700' },
+            color: '#1a3a5c',
+            clip: false
+          }
+        },
+        scales: {
+          x: {
+            max: Math.min(100, Math.max(...prodPctVals) * 1.25),
+            grid: { color:'#f0f0f0' },
+            ticks: { callback: v => v + '%' }
+          },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1764,8 +2099,355 @@ function confirmPedido(yes) {
 }
 
 // ══════════════════════════════════════════════
-// COMPRAS
+// RELATÓRIO PDF ANALÍTICO
 // ══════════════════════════════════════════════
+function exportRelatorio() {
+  const filtCasa = document.getElementById('dash-filter-casa')?.value || '';
+  const filtMes  = document.getElementById('dash-filter-mes')?.value  || '';
+  const MESES = {
+    '01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho',
+    '07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'
+  };
+  const nomeMes  = filtMes ? MESES[filtMes] : 'Todos os meses';
+  const hoje     = fmtDate(new Date());
+
+  const congrs = DATA.congregacoes;
+  let names = Object.keys(congrs);
+  if(filtCasa) names = names.filter(n => n === filtCasa);
+
+  // Recalcular por pedidos com filtro de mês
+  let congrData = {};
+  names.forEach(n => { congrData[n] = { endereco: congrs[n]?.endereco||'', bairro: congrs[n]?.bairro||'', items: {}, total_geral:0 }; });
+
+  DATA.pedidos.forEach(function(p) {
+    if(!names.includes(p.congregacao)) return;
+    const parts = (p.data||'').split('/');
+    const mes = parts[1]||'';
+    if(filtMes && mes !== filtMes) return;
+    const c = congrData[p.congregacao];
+    if(!c) return;
+    if(!c.items[p.descricao]) c.items[p.descricao] = { unidade:p.unidade, preco:p.preco, saida:0, total:0, pedidos:[] };
+    c.items[p.descricao].saida += p.quantidade;
+    c.items[p.descricao].total += p.preco * p.quantidade;
+    c.items[p.descricao].pedidos.push({ data:p.data, qtd:p.quantidade, resp:p.resp||'', obs:p.obs||'' });
+    c.total_geral += p.preco * p.quantidade;
+  });
+  // Se não há pedidos registrados (campo pedidos vazio), usa items do DATA.congregacoes
+  names.forEach(n => {
+    if(!filtMes && Object.keys(congrData[n].items).length === 0 && congrs[n]?.items?.length > 0) {
+      congrs[n].items.forEach(it => {
+        congrData[n].items[it.descricao] = { unidade:it.unidade, preco:it.preco, saida:it.saida, total:it.total, pedidos:[] };
+        congrData[n].total_geral += it.total;
+      });
+    }
+    // Converter para array
+    congrData[n].itemsArr = Object.entries(congrData[n].items).map(([desc,v]) => Object.assign({descricao:desc},v))
+      .sort((a,b) => b.total - a.total);
+  });
+
+  const totalGeral = names.reduce((s,n) => s + (congrData[n]?.total_geral||0), 0);
+
+  // Mapa global de produtos
+  const prodMap = {};
+  names.forEach(n => {
+    (congrData[n]?.itemsArr||[]).forEach(it => {
+      if(!prodMap[it.descricao]) prodMap[it.descricao] = { unidade:it.unidade, qtd:0, val:0 };
+      prodMap[it.descricao].qtd += it.saida;
+      prodMap[it.descricao].val += it.total;
+    });
+  });
+  const topProd = Object.entries(prodMap).sort((a,b)=>b[1].val-a[1].val).slice(0,10);
+
+  const R = v => 'R$ ' + Number(v).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;padding:0;}
+    @page{size:A4;margin:15mm 13mm;}
+    h1{font-size:17px;color:#1a3a5c;margin:0 0 2px;}
+    h2{font-size:13px;color:#1a3a5c;margin:22px 0 8px;border-bottom:2px solid #e6a817;padding-bottom:4px;}
+    h3{font-size:12px;color:#1a3a5c;margin:14px 0 6px;}
+    .header-box{background:#1a3a5c;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;}
+    .header-left h1{color:#fff;font-size:18px;} .header-left p{color:#a0c4e8;font-size:11px;margin:3px 0 0;}
+    .header-right{text-align:right;color:#a0c4e8;font-size:11px;}
+    .header-right .val{font-size:20px;font-weight:900;color:#f5c842;}
+    .kpi-row{display:flex;gap:10px;margin-bottom:18px;}
+    .kpi{flex:1;background:#f0f4f8;border-radius:6px;padding:10px 12px;border-left:4px solid #3b7fc4;}
+    .kpi.gold{border-color:#e6a817;} .kpi.green{border-color:#27ae60;} .kpi.red{border-color:#c0392b;}
+    .kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#607080;margin-bottom:3px;}
+    .kpi-value{font-size:16px;font-weight:900;color:#1a3a5c;}
+    table{width:100%;border-collapse:collapse;margin-bottom:16px;font-size:11px;}
+    thead tr{background:#1a3a5c;color:#fff;}
+    thead th{padding:7px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;}
+    tbody tr:nth-child(even){background:#f7f9fc;}
+    tbody tr:hover{background:#eef2f7;}
+    tbody td{padding:6px 10px;border-bottom:1px solid #e8edf2;vertical-align:middle;}
+    tfoot td{padding:7px 10px;font-weight:700;background:#e8edf2;color:#1a3a5c;}
+    .r{text-align:right;} .bold{font-weight:700;color:#1a3a5c;}
+    .badge-green{background:#e6f7ee;color:#27ae60;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;}
+    .badge-blue{background:#e3eff8;color:#2a527a;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:700;}
+    .casa-section{border:1px solid #d0dce8;border-radius:8px;margin-bottom:20px;overflow:hidden;page-break-inside:avoid;}
+    .casa-header{background:linear-gradient(135deg,#1a3a5c,#2a527a);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+    .casa-header .name{font-size:14px;font-weight:700;} .casa-header .total{font-size:16px;font-weight:900;color:#f5c842;}
+    .casa-header .addr{font-size:10px;color:#a0c4e8;margin-top:2px;}
+    .casa-header .pct{font-size:11px;color:#a0c4e8;margin-top:2px;}
+    .prod-rank{width:24px;font-weight:700;color:#e6a817;}
+    .page-break{page-break-after:always;}
+    .footer{text-align:center;font-size:10px;color:#999;margin-top:30px;border-top:1px solid #ddd;padding-top:10px;}
+  `;
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório Almoxarifado CCB Caieiras</title><style>${css}</style></head><body>`;
+
+  // Cabeçalho
+  html += `<div class="header-box">
+    <div class="header-left">
+      <h1>📋 Relatório Geral — Almoxarifado</h1>
+      <p>Congregação Cristã no Brasil · CNS Caieiras / SP</p>
+      <p>Período: <strong style="color:#f5c842">${nomeMes} 2026</strong>${filtCasa ? ' · Casa: <strong style="color:#f5c842">'+filtCasa+'</strong>' : ''}</p>
+    </div>
+    <div class="header-right">
+      <div style="font-size:10px">Gerado em</div>
+      <div class="val">${hoje}</div>
+      <div style="font-size:9px;margin-top:4px">Sistema Almoxarifado CCB</div>
+    </div>
+  </div>`;
+
+  // KPIs
+  const nCasas = names.filter(n=>(congrData[n]?.itemsArr||[]).length>0).length;
+  const nItens  = names.reduce((s,n)=>(s+(congrData[n]?.itemsArr||[]).length),0);
+  html += `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total Distribuído</div><div class="kpi-value">${R(totalGeral)}</div></div>
+    <div class="kpi gold"><div class="kpi-label">Casas Ativas</div><div class="kpi-value">${nCasas}</div></div>
+    <div class="kpi green"><div class="kpi-label">Tipos de Item</div><div class="kpi-value">${Object.keys(prodMap).length}</div></div>
+    <div class="kpi red"><div class="kpi-label">Pedidos Totais</div><div class="kpi-value">${DATA.pedidos.filter(p=>!filtMes||(p.data||'').split('/')[1]===filtMes).filter(p=>!filtCasa||p.congregacao===filtCasa).length}</div></div>
+  </div>`;
+
+  // Resumo por casa de oração
+  html += `<h2>🏛️ Resumo por Casa de Oração</h2>
+  <table><thead><tr><th>Casa de Oração</th><th>Endereço</th><th class="r">Itens</th><th class="r">Total (R$)</th><th class="r">% Total</th></tr></thead><tbody>`;
+  names.sort((a,b)=>(congrData[b]?.total_geral||0)-(congrData[a]?.total_geral||0)).forEach(n=>{
+    const c = congrData[n]; const tot = c?.total_geral||0; const cnt = (c?.itemsArr||[]).length;
+    const pct = totalGeral > 0 ? ((tot/totalGeral)*100).toFixed(1)+'%' : '0%';
+    html += `<tr><td class="bold">⛪ ${n}</td><td style="color:#607080">${c?.endereco||''}</td><td class="r">${cnt}</td><td class="r bold">${R(tot)}</td><td class="r" style="color:#3b7fc4;font-weight:700">${pct}</td></tr>`;
+  });
+  html += `</tbody><tfoot><tr><td colspan="2">TOTAL GERAL</td><td class="r">${nItens}</td><td class="r">${R(totalGeral)}</td><td class="r">100%</td></tr></tfoot></table>`;
+
+  // Top produtos
+  html += `<h2>📦 Top 10 Produtos Mais Distribuídos (por valor)</h2>
+  <table><thead><tr><th>#</th><th>Produto</th><th>Un.</th><th class="r">Qtd. Total</th><th class="r">Valor Total (R$)</th><th class="r">% do Total</th></tr></thead><tbody>`;
+  topProd.forEach(([desc,v],i)=>{
+    const pct = totalGeral>0?((v.val/totalGeral)*100).toFixed(1)+'%':'—';
+    html += `<tr><td class="prod-rank">${i===0?'🥇':i===1?'🥈':i===2?'🥉':(i+1)+'º'}</td><td class="bold">${desc}</td><td><span class="badge-blue">${v.unidade}</span></td><td class="r">${v.qtd.toLocaleString('pt-BR')}</td><td class="r">${R(v.val)}</td><td class="r" style="color:#3b7fc4;font-weight:700">${pct}</td></tr>`;
+  });
+  html += `</tbody></table>`;
+
+  // Detalhe por casa
+  html += `<div class="page-break"></div><h2>📋 Detalhamento por Casa de Oração</h2>`;
+  names.sort((a,b)=>(congrData[b]?.total_geral||0)-(congrData[a]?.total_geral||0)).forEach((n,idx)=>{
+    const c = congrData[n]; const tot = c?.total_geral||0;
+    const pct = totalGeral>0?((tot/totalGeral)*100).toFixed(1)+'%':'0%';
+    html += `<div class="casa-section">
+      <div class="casa-header">
+        <div><div class="name">⛪ ${n}</div><div class="addr">${c?.endereco||'Endereço não cadastrado'}</div><div class="pct">${pct} do total distribuído</div></div>
+        <div class="total">${R(tot)}</div>
+      </div>`;
+    if((c?.itemsArr||[]).length === 0) {
+      html += `<div style="padding:16px 18px;color:#888;text-align:center">Nenhum pedido registrado neste período</div>`;
+    } else {
+      html += `<table style="margin:0"><thead><tr><th>#</th><th>Produto</th><th>Un.</th><th class="r">Qtd.</th><th class="r">R$ Unit.</th><th class="r">Total (R$)</th><th class="r">% Casa</th></tr></thead><tbody>`;
+      (c.itemsArr||[]).forEach((it,i)=>{
+        const pct2 = tot>0?((it.total/tot)*100).toFixed(1)+'%':'—';
+        html += `<tr><td style="color:#e6a817;font-weight:700;width:22px">${i+1}º</td><td class="bold">${it.descricao}</td><td><span class="badge-blue">${it.unidade}</span></td><td class="r">${it.saida.toLocaleString('pt-BR')}</td><td class="r">${R(it.preco)}</td><td class="r bold">${R(it.total)}</td><td class="r" style="color:#3b7fc4;font-weight:700">${pct2}</td></tr>`;
+      });
+      html += `</tbody><tfoot><tr><td colspan="5">TOTAL</td><td class="r">${R(tot)}</td><td class="r">100%</td></tr></tfoot></table>`;
+    }
+    html += `</div>`;
+    if(idx < names.length-1 && idx > 0 && (idx+1)%3 === 0) html += `<div class="page-break"></div>`;
+  });
+
+  html += `<div class="footer">Relatório gerado em ${hoje} · Sistema Almoxarifado CCB Caieiras · Desenvolvido por Leandro Machado</div>`;
+  html += `</body></html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ showToast('⚠️ Permita pop-ups para exportar PDF'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ w.print(); }, 700);
+}
+
+// ══════════════════════════════════════════════
+// RELATÓRIO PDF POR CASA DE ORAÇÃO
+// ══════════════════════════════════════════════
+function exportRelatorioItem() {
+  const filtCasa = document.getElementById('dash-filter-casa')?.value || '';
+  const filtMes  = document.getElementById('dash-filter-mes')?.value  || '';
+  const MESES = {
+    '01':'Janeiro','02':'Fevereiro','03':'Março','04':'Abril','05':'Maio','06':'Junho',
+    '07':'Julho','08':'Agosto','09':'Setembro','10':'Outubro','11':'Novembro','12':'Dezembro'
+  };
+  const nomeMes = filtMes ? MESES[filtMes] : 'Todos os meses';
+  const hoje    = fmtDate(new Date());
+  const R = v => 'R$ ' + Number(v).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+
+  const congrs = DATA.congregacoes;
+  let names = Object.keys(congrs);
+  if(filtCasa) names = names.filter(n => n === filtCasa);
+
+  // Montar mapa: casa → { itens: { desc: {qtd, preco, unidade, total} }, totalCasa }
+  const casaMap = {};
+  DATA.pedidos.forEach(function(p) {
+    if(!names.includes(p.congregacao)) return;
+    const parts = (p.data||'').split('/');
+    const mes = parts[1]||'';
+    if(filtMes && mes !== filtMes) return;
+    if(!casaMap[p.congregacao]) casaMap[p.congregacao] = { itens: {} };
+    const cm = casaMap[p.congregacao];
+    if(!cm.itens[p.descricao]) cm.itens[p.descricao] = { qtd:0, preco:p.preco, unidade:p.unidade, total:0 };
+    cm.itens[p.descricao].qtd   += p.quantidade;
+    cm.itens[p.descricao].total += p.preco * p.quantidade;
+  });
+
+  // Fallback: sem pedidos, usa itens das congregações
+  if(!filtMes && Object.keys(casaMap).length === 0) {
+    names.forEach(n => {
+      (congrs[n]?.items||[]).forEach(it => {
+        if(!casaMap[n]) casaMap[n] = { itens: {} };
+        const cm = casaMap[n];
+        if(!cm.itens[it.descricao]) cm.itens[it.descricao] = { qtd:0, preco:it.preco, unidade:it.unidade, total:0 };
+        cm.itens[it.descricao].qtd   += it.saida;
+        cm.itens[it.descricao].total += it.total;
+      });
+    });
+  }
+
+  // Calcular total geral de cada casa
+  Object.keys(casaMap).forEach(n => {
+    casaMap[n].totalCasa = Object.values(casaMap[n].itens).reduce((s,i)=>s+i.total,0);
+  });
+
+  const casasOrdenadas = Object.entries(casaMap).sort((a,b) => a[0].localeCompare(b[0]));
+  if(!casasOrdenadas.length) { showToast('⚠️ Nenhum dado para gerar relatório!'); return; }
+
+  const grandTotal = casasOrdenadas.reduce((s,[,v])=>s+v.totalCasa,0);
+  const nItensTipos = new Set(casasOrdenadas.flatMap(([,v])=>Object.keys(v.itens))).size;
+
+  const css = `
+    body{font-family:Arial,sans-serif;font-size:11px;color:#222;margin:0;padding:0;}
+    @page{size:A4;margin:15mm 13mm;}
+    h1{font-size:18px;color:#fff;margin:0 0 2px;}
+    h2{font-size:13px;color:#1a3a5c;margin:20px 0 7px;border-bottom:2px solid #e6a817;padding-bottom:4px;}
+    .header-box{background:#1a3a5c;color:#fff;padding:16px 20px;border-radius:8px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;}
+    .header-left p{color:#a0c4e8;font-size:11px;margin:3px 0 0;}
+    .header-right{text-align:right;color:#a0c4e8;font-size:11px;}
+    .header-right .val{font-size:20px;font-weight:900;color:#f5c842;}
+    .kpi-row{display:flex;gap:10px;margin-bottom:18px;}
+    .kpi{flex:1;background:#f0f4f8;border-radius:6px;padding:10px 12px;border-left:4px solid #3b7fc4;}
+    .kpi.gold{border-color:#e6a817;} .kpi.green{border-color:#27ae60;}
+    .kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#607080;margin-bottom:3px;}
+    .kpi-value{font-size:16px;font-weight:900;color:#1a3a5c;}
+    .casa-section{border:1px solid #d0dce8;border-radius:8px;margin-bottom:20px;overflow:hidden;page-break-inside:avoid;}
+    .casa-header{background:linear-gradient(135deg,#1a3a5c,#2a527a);color:#fff;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+    .casa-header .cname{font-size:14px;font-weight:900;letter-spacing:0.3px;}
+    .casa-header .csub{font-size:10px;color:#a0c4e8;margin-top:3px;}
+    .casa-header .ctotal{font-size:16px;font-weight:900;color:#f5c842;white-space:nowrap;}
+    table{width:100%;border-collapse:collapse;font-size:11px;}
+    thead tr{background:#e8edf2;}
+    thead th{padding:6px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:0.4px;color:#1a3a5c;font-weight:700;}
+    tbody tr:nth-child(even){background:#f7f9fc;}
+    tbody td{padding:6px 10px;border-bottom:1px solid #e8edf2;vertical-align:middle;}
+    tfoot td{padding:7px 10px;font-weight:700;background:#e8edf2;color:#1a3a5c;}
+    .r{text-align:right;} .bold{font-weight:700;color:#1a3a5c;}
+    .pct{color:#3b7fc4;font-weight:700;}
+    .page-break{page-break-after:always;}
+    .footer{text-align:center;font-size:10px;color:#999;margin-top:30px;border-top:1px solid #ddd;padding-top:10px;}
+    .badge-un{background:#e3eff8;color:#2a527a;border-radius:10px;padding:1px 6px;font-size:9px;font-weight:700;}
+  `;
+
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Relatório por Casa — Almoxarifado CCB Caieiras</title><style>${css}</style></head><body>`;
+
+  // Cabeçalho
+  html += `<div class="header-box">
+    <div class="header-left">
+      <h1>⛪ Relatório de Distribuição por Casa</h1>
+      <p>Congregação Cristã no Brasil · CNS Caieiras / SP</p>
+      <p>Período: <strong style="color:#f5c842">${nomeMes} 2026</strong>${filtCasa ? ' · Casa: <strong style="color:#f5c842">'+filtCasa+'</strong>' : ''}</p>
+    </div>
+    <div class="header-right">
+      <div style="font-size:10px">Gerado em</div>
+      <div class="val">${hoje}</div>
+      <div style="font-size:9px;margin-top:4px">Sistema Almoxarifado CCB</div>
+    </div>
+  </div>`;
+
+  // KPIs
+  html += `<div class="kpi-row">
+    <div class="kpi"><div class="kpi-label">Total Distribuído</div><div class="kpi-value">${R(grandTotal)}</div></div>
+    <div class="kpi gold"><div class="kpi-label">Tipos de Produto</div><div class="kpi-value">${nItensTipos}</div></div>
+    <div class="kpi green"><div class="kpi-label">Casas Atendidas</div><div class="kpi-value">${casasOrdenadas.length}</div></div>
+  </div>`;
+
+  html += `<h2>📋 Distribuição por Casa de Oração</h2>`;
+
+  // Uma seção por casa
+  casasOrdenadas.forEach(([casa, v]) => {
+    const itensList = Object.entries(v.itens).sort((a,b) => a[0].localeCompare(b[0]));
+    const totalCasa = v.totalCasa;
+    const nItens    = itensList.length;
+
+    html += `<div class="casa-section">
+      <div class="casa-header">
+        <div>
+          <div class="cname">⛪ ${casa}</div>
+          <div class="csub">${nItens} tipo${nItens>1?'s':''} de produto distribuído${nItens>1?'s':''}</div>
+        </div>
+        <div class="ctotal">${R(totalCasa)}</div>
+      </div>
+      <table>
+        <thead><tr>
+          <th style="width:42%">Produto</th>
+          <th style="width:8%">Un.</th>
+          <th class="r" style="width:14%">Qtd.</th>
+          <th class="r" style="width:16%">R$ Unit.</th>
+          <th class="r" style="width:14%">Total</th>
+          <th class="r" style="width:6%">%</th>
+        </tr></thead>
+        <tbody>`;
+
+    itensList.forEach(([desc, it]) => {
+      const pct = totalCasa > 0 ? ((it.total / totalCasa) * 100).toFixed(1) + '%' : '—';
+      html += `<tr>
+        <td class="bold">${desc}</td>
+        <td><span class="badge-un">${it.unidade}</span></td>
+        <td class="r">${it.qtd.toLocaleString('pt-BR')}</td>
+        <td class="r">${R(it.preco||0)}</td>
+        <td class="r bold">${R(it.total)}</td>
+        <td class="r pct">${pct}</td>
+      </tr>`;
+    });
+
+    const totalQtd = itensList.reduce((s,[,i])=>s+i.qtd,0);
+    html += `</tbody>
+      <tfoot><tr>
+        <td colspan="2" style="font-weight:700">TOTAL DA CASA</td>
+        <td class="r">${totalQtd.toLocaleString('pt-BR')}</td>
+        <td></td>
+        <td class="r">${R(totalCasa)}</td>
+        <td class="r">100%</td>
+      </tr></tfoot>
+      </table>
+    </div>`;
+  });
+
+  html += `<div class="footer">Relatório por Casa gerado em ${hoje} · Sistema Almoxarifado CCB Caieiras · Desenvolvido por Leandro Machado</div>`;
+  html += `</body></html>`;
+
+  const w = window.open('', '_blank');
+  if(!w){ showToast('⚠️ Permita pop-ups para exportar PDF'); return; }
+  w.document.write(html);
+  w.document.close();
+  setTimeout(()=>{ w.print(); }, 700);
+}
+
+
 function buildCompras() {
   const items = DATA.estoque.filter(e => e.comprar || e.estq_atual < 0);
   document.getElementById('badge-buy').textContent = items.length;
