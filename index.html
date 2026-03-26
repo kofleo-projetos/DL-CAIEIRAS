@@ -693,7 +693,13 @@
   const db  = getFirestore(app);
   const DOC_REF = doc(db, "almoxarifado", "dados");
 
+  // _localEditTs: timestamp da última edição local. onSnapshot ignora
+  // atualizações que cheguem nos 5s seguintes a uma edição local,
+  // evitando que o Firebase sobrescreva o que o usuário acabou de alterar.
+  window._localEditTs = 0;
+
   window.fbSave = async function() {
+    window._editouLocal = true; // bloqueia onSnapshot para sempre nesta sessão
     try {
       await setDoc(DOC_REF, {
         congregacoes: DATA.congregacoes,
@@ -705,7 +711,6 @@
       console.log("✅ Firebase: dados salvos");
     } catch(e) {
       console.error("❌ Firebase save error:", e);
-      showToast("⚠️ Erro ao salvar no Firebase!");
     }
   };
 
@@ -737,7 +742,13 @@
     }
   }
 
+  // _editouLocal: após qualquer edição local, o onSnapshot fica desativado
+  // até o próximo reload da página, evitando sobrescrita dos dados editados.
+  window._editouLocal = false;
+
   onSnapshot(DOC_REF, (snap) => {
+    // Bloqueia permanentemente após primeira edição local nesta sessão
+    if(window._editouLocal) return;
     if(snap.exists() && window._fbLoaded) {
       const d = snap.data();
       if(d.congregacoes) DATA.congregacoes = d.congregacoes;
@@ -1220,6 +1231,8 @@ function editCongrItem(congregName, itemIdx) {
     { key:'obs',       label:'Observação', value: it.obs || '' }
   ], function(data) {
     if(data.saida <= 0) { showToast('⚠️ A quantidade deve ser maior que zero!'); return; }
+    const descOriginal = c.items[itemIdx].descricao;
+    const saidaOriginal = c.items[itemIdx].saida;
     c.items[itemIdx].descricao = data.descricao;
     c.items[itemIdx].unidade   = data.unidade;
     c.items[itemIdx].preco     = data.preco;
@@ -1227,6 +1240,25 @@ function editCongrItem(congregName, itemIdx) {
     c.items[itemIdx].total     = data.preco * data.saida;
     c.items[itemIdx].obs       = data.obs;
     c.total_geral = c.items.reduce((s, i) => s + i.total, 0);
+
+    // ── Sincronizar DATA.pedidos ──
+    // Remove todos os pedidos antigos deste produto/congregação
+    // e substitui por um único pedido sintético com os valores atualizados.
+    // Isso garante que buildDashboard (que soma DATA.pedidos) sempre bata
+    // com o que está em DATA.congregacoes.
+    DATA.pedidos = DATA.pedidos.filter(p =>
+      !(p.congregacao === congregName && p.descricao === descOriginal)
+    );
+    DATA.pedidos.push({
+      descricao:   data.descricao,
+      unidade:     data.unidade,
+      preco:       data.preco,
+      congregacao: congregName,
+      quantidade:  data.saida,
+      data:        (function(){ const d = new Date(); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'}); })(),
+      obs:         data.obs || ''
+    });
+
     filterCongr();
     buildDashboard();
     if(window.fbSave) window.fbSave();
@@ -1241,6 +1273,8 @@ function deleteCongrItem(congregName, itemIdx) {
   if(!confirm('Excluir "' + it.descricao + '" da congregação ' + congregName + '?\n\nEsta ação não pode ser desfeita.')) return;
   c.items.splice(itemIdx, 1);
   c.total_geral = c.items.reduce((s, i) => s + i.total, 0);
+  // ── Remover pedidos relacionados de DATA.pedidos ──
+  DATA.pedidos = DATA.pedidos.filter(p => !(p.congregacao === congregName && p.descricao === it.descricao));
   filterCongr();
   buildDashboard();
   if(window.fbSave) window.fbSave();
