@@ -756,7 +756,7 @@
         }
         IGREJAS = Object.keys(DATA.congregacoes).sort();
         buildDashboard(); buildCongregacoes(); buildEstoque();
-        buildPedidos();   buildCompras();     buildCadastro();
+        buildPedidos();   buildHistorico(); buildCompras(); buildCadastro();
         rebuildIgrejaSelects();
         // Salva os dados já corrigidos de volta no Firebase
         window.fbSave();
@@ -791,7 +791,7 @@
       }
       IGREJAS = Object.keys(DATA.congregacoes).sort();
       buildDashboard(); buildCongregacoes(); buildEstoque();
-      buildPedidos();   buildCompras();     buildCadastro();
+      buildPedidos();   buildHistorico(); buildCompras(); buildCadastro();
       rebuildIgrejaSelects();
     }
   });
@@ -823,6 +823,7 @@
     <button class="tab-btn active" onclick="showTab('pedidos')">📋 Pedidos</button>
     <button class="tab-btn" onclick="protectedTab('dashboard')">📊 Dashboard</button>
     <button class="tab-btn" onclick="protectedTab('congregacoes')">⛪ Congregações <span class="tab-badge" id="badge-congr">9</span></button>
+    <button class="tab-btn" onclick="protectedTab('historico')">📂 Histórico <span class="tab-badge" id="badge-hist" style="background:#8e44ad;color:#fff">0</span></button>
     <button class="tab-btn" onclick="protectedTab('estoque')">📦 Estoque <span class="tab-badge" id="badge-est">—</span></button>
     <button class="tab-btn" onclick="protectedTab('compras')">🛒 Comprar <span class="tab-badge" id="badge-buy" style="background:#c0392b;color:#fff">!</span></button>
     <button class="tab-btn" onclick="protectedTab('cadastro')">🏛️ Cadastro</button>
@@ -944,6 +945,15 @@
           </div>
         </div>
 
+        <select class="filter-select" id="filter-congr-mes" onchange="filterCongr()" style="min-width:120px;">
+          <option value="">Todos os meses</option>
+          <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+          <option value="03" selected>Março</option><option value="04">Abril</option>
+          <option value="05">Maio</option><option value="06">Junho</option>
+          <option value="07">Julho</option><option value="08">Agosto</option>
+          <option value="09">Setembro</option><option value="10">Outubro</option>
+          <option value="11">Novembro</option><option value="12">Dezembro</option>
+        </select>
         <select class="filter-select" id="filter-congr-pdf" onchange="filterCongr()" style="min-width:180px;">
           <option value="">Todas as congregações</option>
         </select>
@@ -954,9 +964,62 @@
       <input type="text" id="search-congr" placeholder="Filtrar congregação…" oninput="filterCongr()">
     </div>
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
-      💡 <em>Passe o mouse sobre um item para ver as opções de editar e excluir.</em>
+      💡 <em>Passe o mouse sobre um item para ver as opções de editar e excluir. O filtro de mês mostra apenas os pedidos do período selecionado.</em>
     </p>
     <div class="congr-grid" id="congr-grid"></div>
+  </div>
+
+  <!-- ══════════════════════════ HISTÓRICO DE PEDIDOS ══════════════════════════ -->
+  <div class="view" id="view-historico">
+    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+      <div class="section-title" style="margin:0">📂 Histórico de Pedidos</div>
+    </div>
+    <div class="filter-row" style="margin-bottom:14px;">
+      <div class="search-bar" style="flex:1;min-width:200px;max-width:320px;margin-bottom:0;">
+        <input type="text" id="search-hist" placeholder="Buscar produto ou congregação…" oninput="filterHistorico()">
+      </div>
+      <select class="filter-select" id="filter-hist-mes" onchange="filterHistorico()">
+        <option value="">Todos os meses</option>
+        <option value="01">Janeiro</option><option value="02">Fevereiro</option>
+        <option value="03" selected>Março</option><option value="04">Abril</option>
+        <option value="05">Maio</option><option value="06">Junho</option>
+        <option value="07">Julho</option><option value="08">Agosto</option>
+        <option value="09">Setembro</option><option value="10">Outubro</option>
+        <option value="11">Novembro</option><option value="12">Dezembro</option>
+      </select>
+      <select class="filter-select" id="filter-hist-casa" onchange="filterHistorico()" style="min-width:180px;">
+        <option value="">Todas as congregações</option>
+      </select>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+      💡 <em>Aqui você visualiza todos os pedidos lançados. Use os filtros para encontrar um pedido específico. Cada linha pode ser editada ou excluída individualmente.</em>
+    </p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Data</th>
+            <th>Congregação</th>
+            <th>Produto</th>
+            <th>Un.</th>
+            <th style="text-align:right">Qtd.</th>
+            <th style="text-align:right">R$ Unit.</th>
+            <th style="text-align:right">Total</th>
+            <th>Obs.</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="historico-table"></tbody>
+        <tfoot>
+          <tr style="background:#f0f4f8;font-weight:700;">
+            <td colspan="7" style="padding:10px 14px;color:var(--navy)">TOTAL FILTRADO</td>
+            <td class="td-num td-bold" style="color:var(--green)" id="hist-total-val"></td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
   </div>
 
   <!-- ══════════════════════════ ESTOQUE ══════════════════════════ -->
@@ -1190,6 +1253,12 @@ function rebuildIgrejaSelects() {
   if(fPdf) {
     const cur = fPdf.value;
     fPdf.innerHTML = '<option value="">Todas as congregações</option>' +
+      IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+  }
+  const fHist = document.getElementById('filter-hist-casa');
+  if(fHist) {
+    const cur = fHist.value;
+    fHist.innerHTML = '<option value="">Todas as congregações</option>' +
       IGREJAS.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
   }
   rebuildDashFilterSelect();
@@ -1749,9 +1818,32 @@ function renderCongr(entries) {
 function filterCongr() {
   const q    = (document.getElementById('search-congr')?.value || '').toLowerCase();
   const filt = document.getElementById('filter-congr-pdf')?.value || '';
-  let entries = Object.entries(DATA.congregacoes);
-  if(filt) entries = entries.filter(e => e[0] === filt);
-  else if(q) entries = entries.filter(e => e[0].toLowerCase().includes(q));
+  const filtMes = document.getElementById('filter-congr-mes')?.value || '';
+  let names = Object.keys(DATA.congregacoes);
+  if(filt) names = names.filter(n => n === filt);
+  else if(q) names = names.filter(n => n.toLowerCase().includes(q));
+
+  // Se há filtro de mês, recalcula os itens de cada congregação a partir de DATA.pedidos
+  let entries;
+  if(filtMes) {
+    entries = names.map(function(nome) {
+      const c = DATA.congregacoes[nome];
+      const mapa = {};
+      DATA.pedidos.forEach(function(p) {
+        if(p.congregacao !== nome) return;
+        const parts = (p.data||'').split('/');
+        if(parts[1] !== filtMes) return;
+        if(!mapa[p.descricao]) mapa[p.descricao] = { descricao:p.descricao, unidade:p.unidade, preco:p.preco, saida:0, total:0, obs:p.obs||'' };
+        mapa[p.descricao].saida += p.quantidade;
+        mapa[p.descricao].total += p.preco * p.quantidade;
+      });
+      const items = Object.values(mapa);
+      const total_geral = items.reduce((s,i) => s+i.total, 0);
+      return [nome, Object.assign({}, c, { items, total_geral })];
+    });
+  } else {
+    entries = names.map(nome => [nome, DATA.congregacoes[nome]]);
+  }
   renderCongr(entries);
 }
 
@@ -2136,17 +2228,8 @@ function confirmPedido(yes) {
   });
 
   if(!DATA.congregacoes[casa]) DATA.congregacoes[casa] = { endereco:'', items:[], total_geral:0 };
-  valid.forEach(function(r) {
-    const existing = DATA.congregacoes[casa].items.find(it => it.descricao === r.descricao);
-    if(existing){
-      existing.saida += r.quantidade;
-      existing.total = existing.saida * existing.preco;
-      if(obs) existing.obs = (existing.obs ? existing.obs + '; ' + obs : obs);
-    } else {
-      DATA.congregacoes[casa].items.push({ descricao:r.descricao, unidade:r.unidade, preco:r.preco, saida:r.quantidade, total:r.preco*r.quantidade, obs:obs });
-    }
-    DATA.congregacoes[casa].total_geral = DATA.congregacoes[casa].items.reduce((s,it) => s+it.total, 0);
-  });
+  // Recalcula congregação apenas a partir dos pedidos (evita duplicação)
+  recalcularCongregacoesDosPedidos();
 
   document.getElementById('oCasa').value = '';
   document.getElementById('oResp').value = '';
@@ -2156,7 +2239,7 @@ function confirmPedido(yes) {
   document.getElementById('autoSummary').style.display = 'none';
   const bl = document.getElementById('blessingMsg');
   bl.style.display = 'block'; setTimeout(function(){ bl.style.display = 'none'; }, 3500);
-  buildDashboard(); buildCongregacoes();
+  buildDashboard(); buildCongregacoes(); buildHistorico();
   if(window.fbSave) window.fbSave();
   showToast('✅ Pedido registrado!');
 }
@@ -2511,6 +2594,129 @@ function exportRelatorioItem() {
 }
 
 
+// ══════════════════════════════════════════════
+// HISTÓRICO DE PEDIDOS
+// ══════════════════════════════════════════════
+function buildHistorico() {
+  rebuildIgrejaSelects();
+  document.getElementById('badge-hist').textContent = DATA.pedidos.length;
+  filterHistorico();
+}
+
+function filterHistorico() {
+  const q    = (document.getElementById('search-hist')?.value || '').toLowerCase();
+  const mes  = document.getElementById('filter-hist-mes')?.value || '';
+  const casa = document.getElementById('filter-hist-casa')?.value || '';
+  let pedidos = DATA.pedidos.slice();
+  if(mes)  pedidos = pedidos.filter(p => { const parts=(p.data||'').split('/'); return parts[1]===mes; });
+  if(casa) pedidos = pedidos.filter(p => p.congregacao === casa);
+  if(q)    pedidos = pedidos.filter(p =>
+    (p.descricao||'').toLowerCase().includes(q) ||
+    (p.congregacao||'').toLowerCase().includes(q)
+  );
+  // Ordenar: mais recente primeiro
+  pedidos = pedidos.slice().reverse();
+  const totalVal = pedidos.reduce((s,p) => s + (p.preco||0)*(p.quantidade||0), 0);
+  document.getElementById('hist-total-val').textContent = R$(totalVal);
+  document.getElementById('badge-hist').textContent = DATA.pedidos.length;
+
+  if(!pedidos.length) {
+    document.getElementById('historico-table').innerHTML =
+      '<tr><td colspan="10" style="text-align:center;padding:24px;color:var(--text-muted)">Nenhum pedido encontrado com os filtros selecionados.</td></tr>';
+    return;
+  }
+
+  document.getElementById('historico-table').innerHTML = pedidos.map(function(p, i) {
+    const realIdx = DATA.pedidos.indexOf(p);
+    const total = (p.preco||0) * (p.quantidade||0);
+    return '<tr>' +
+      '<td class="td-num" style="color:var(--text-muted)">' + (i+1) + '</td>' +
+      '<td style="white-space:nowrap;font-size:12px">' + (p.data||'—') + '</td>' +
+      '<td class="td-bold" style="font-size:12px">⛪ ' + (p.congregacao||'—') + '</td>' +
+      '<td>' + (p.descricao||'—') + '</td>' +
+      '<td><span class="badge badge-blue">' + (p.unidade||'—') + '</span></td>' +
+      '<td class="td-num">' + N(p.quantidade||0) + '</td>' +
+      '<td class="td-num">' + (p.preco>0 ? R$(p.preco) : '—') + '</td>' +
+      '<td class="td-num td-bold">' + R$(total) + '</td>' +
+      '<td style="font-size:11px;color:var(--text-muted);max-width:120px">' + (p.obs||'') + '</td>' +
+      '<td style="white-space:nowrap;display:flex;gap:4px;">' +
+        '<button class="btn-action btn-edit" onclick="editHistPedido(' + realIdx + ')">✏️ Editar</button>' +
+        '<button class="btn-action" style="background:#fde8e8;color:var(--red)" onclick="deleteHistPedido(' + realIdx + ')">🗑️ Excluir</button>' +
+      '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function editHistPedido(idx) {
+  const p = DATA.pedidos[idx];
+  if(!p) return;
+  openEditModal('✏️ Editar Pedido', [
+    { key:'congregacao', label:'Congregação', type:'select', value:p.congregacao,
+      options: IGREJAS.map(n => ({ v:n, l:n })) },
+    { key:'descricao', label:'Produto', value:p.descricao },
+    { key:'unidade',   label:'Unidade', value:p.unidade },
+    { key:'preco',     label:'Preço Unitário (R$)', type:'number', step:'0.01', value:p.preco },
+    { key:'quantidade',label:'Quantidade', type:'number', step:'1', value:p.quantidade },
+    { key:'data',      label:'Data (dd/mm/aaaa)', value:p.data||'' },
+    { key:'obs',       label:'Observação', value:p.obs||'' }
+  ], function(data) {
+    if(!data.quantidade || data.quantidade <= 0) { showToast('⚠️ Quantidade deve ser maior que zero!'); return; }
+    const oldCasa = p.congregacao;
+    const oldDesc = p.descricao;
+    const oldQtd  = p.quantidade;
+    const oldTotal = (p.preco||0) * (p.quantidade||0);
+
+    // Atualiza o pedido
+    DATA.pedidos[idx] = Object.assign({}, p, {
+      congregacao: data.congregacao,
+      descricao:   data.descricao,
+      unidade:     data.unidade,
+      preco:       data.preco,
+      quantidade:  data.quantidade,
+      data:        data.data,
+      obs:         data.obs
+    });
+
+    // Recalcula DATA.congregacoes a partir dos pedidos
+    recalcularCongregacoesDosPedidos();
+    filterHistorico();
+    buildCongregacoes();
+    buildDashboard();
+    if(window.fbSave) window.fbSave();
+    showToast('✅ Pedido atualizado com sucesso!');
+  });
+}
+
+function deleteHistPedido(idx) {
+  const p = DATA.pedidos[idx];
+  if(!p) return;
+  if(!confirm('Excluir este pedido?\n\n' + p.descricao + ' — ' + p.congregacao + ' (' + p.data + ')\n\nEsta ação não pode ser desfeita.')) return;
+  DATA.pedidos.splice(idx, 1);
+  recalcularCongregacoesDosPedidos();
+  filterHistorico();
+  buildCongregacoes();
+  buildDashboard();
+  if(window.fbSave) window.fbSave();
+  showToast('🗑️ Pedido excluído.');
+}
+
+// Recalcula DATA.congregacoes completamente a partir de DATA.pedidos
+function recalcularCongregacoesDosPedidos() {
+  Object.keys(DATA.congregacoes).forEach(function(nome) {
+    const c = DATA.congregacoes[nome];
+    const mapa = {};
+    DATA.pedidos.filter(p => p.congregacao === nome).forEach(function(p) {
+      if(!mapa[p.descricao]) {
+        mapa[p.descricao] = { descricao:p.descricao, unidade:p.unidade, preco:p.preco, saida:0, total:0, obs:p.obs||'' };
+      }
+      mapa[p.descricao].saida += p.quantidade;
+      mapa[p.descricao].total += p.preco * p.quantidade;
+    });
+    c.items = Object.values(mapa);
+    c.total_geral = c.items.reduce((s,i) => s+i.total, 0);
+  });
+}
+
 function buildCompras() {
   const items = DATA.estoque.filter(e => e.comprar || e.estq_atual < 0);
   document.getElementById('badge-buy').textContent = items.length;
@@ -2530,6 +2736,7 @@ buildDashboard();
 buildCongregacoes();
 buildEstoque();
 buildPedidos();
+buildHistorico();
 buildCompras();
 buildCadastro();
 
