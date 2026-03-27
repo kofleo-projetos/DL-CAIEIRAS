@@ -714,6 +714,30 @@
     }
   };
 
+  // Recalcula items e total_geral de cada congregação a partir de DATA.pedidos,
+  // corrigindo qualquer inconsistência acumulada no Firebase por edições anteriores.
+  function recalcularCongregacoes() {
+    Object.keys(DATA.congregacoes).forEach(function(nome) {
+      const c = DATA.congregacoes[nome];
+      const pedidosCasa = DATA.pedidos.filter(p => p.congregacao === nome);
+      // Reconstrói o mapa de itens somando todos os pedidos
+      const mapa = {};
+      pedidosCasa.forEach(function(p) {
+        if(!mapa[p.descricao]) {
+          mapa[p.descricao] = { descricao: p.descricao, unidade: p.unidade, preco: p.preco, saida: 0, total: 0, obs: p.obs || '' };
+        }
+        mapa[p.descricao].saida += p.quantidade;
+        mapa[p.descricao].total += p.preco * p.quantidade;
+      });
+      const novosItems = Object.values(mapa);
+      if(novosItems.length > 0) {
+        // Só substitui se houver pedidos — preserva congregações sem pedidos
+        c.items = novosItems;
+        c.total_geral = novosItems.reduce(function(s, i) { return s + i.total; }, 0);
+      }
+    });
+  }
+
   async function fbLoad() {
     try {
       const snap = await getDoc(DOC_REF);
@@ -722,6 +746,9 @@
         if(d.congregacoes) DATA.congregacoes = d.congregacoes;
         if(d.estoque)      DATA.estoque      = d.estoque;
         if(d.pedidos)      DATA.pedidos      = d.pedidos;
+        // ── Recalcular totais das congregações a partir dos pedidos ──
+        // Corrige qualquer valor duplicado/multiplicado acumulado no Firebase
+        recalcularCongregacoes();
         // ── Restaurar estado do bloqueio ──
         if(typeof d.bloqueado === 'boolean' && d.bloqueado !== pedidosBloqueados) {
           pedidosBloqueados = d.bloqueado;
@@ -731,7 +758,9 @@
         buildDashboard(); buildCongregacoes(); buildEstoque();
         buildPedidos();   buildCompras();     buildCadastro();
         rebuildIgrejaSelects();
-        console.log("✅ Firebase: dados carregados de", d.atualizado || "—");
+        // Salva os dados já corrigidos de volta no Firebase
+        window.fbSave();
+        console.log("✅ Firebase: dados carregados e recalculados");
         showToast("☁️ Dados sincronizados com Firebase!");
       } else {
         console.log("ℹ️ Firebase: nenhum dado encontrado, usando dados locais.");
