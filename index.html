@@ -1001,6 +1001,7 @@
             <th>#</th>
             <th>Data</th>
             <th>Congregação</th>
+            <th>Responsável</th>
             <th>Produto</th>
             <th>Un.</th>
             <th style="text-align:right">Qtd.</th>
@@ -1013,7 +1014,7 @@
         <tbody id="historico-table"></tbody>
         <tfoot>
           <tr style="background:#f0f4f8;font-weight:700;">
-            <td colspan="7" style="padding:10px 14px;color:var(--navy)">TOTAL FILTRADO</td>
+            <td colspan="8" style="padding:10px 14px;color:var(--navy)">TOTAL FILTRADO</td>
             <td class="td-num td-bold" style="color:var(--green)" id="hist-total-val"></td>
             <td colspan="2"></td>
           </tr>
@@ -2224,7 +2225,7 @@ function confirmPedido(yes) {
 
   valid.forEach(function(r) {
     DATA.pedidos.push({ descricao:r.descricao, unidade:r.unidade, preco:r.preco,
-      congregacao:casa, quantidade:r.quantidade, data:dataP, obs:obs });
+      congregacao:casa, quantidade:r.quantidade, data:dataP, resp:resp, obs:obs });
   });
 
   if(!DATA.congregacoes[casa]) DATA.congregacoes[casa] = { endereco:'', items:[], total_geral:0 };
@@ -2633,6 +2634,7 @@ function filterHistorico() {
       '<td class="td-num" style="color:var(--text-muted)">' + (i+1) + '</td>' +
       '<td style="white-space:nowrap;font-size:12px">' + (p.data||'—') + '</td>' +
       '<td class="td-bold" style="font-size:12px">⛪ ' + (p.congregacao||'—') + '</td>' +
+      '<td style="font-size:12px;color:var(--navy-mid)">' + (p.resp||'—') + '</td>' +
       '<td>' + (p.descricao||'—') + '</td>' +
       '<td><span class="badge badge-blue">' + (p.unidade||'—') + '</span></td>' +
       '<td class="td-num">' + N(p.quantidade||0) + '</td>' +
@@ -2657,6 +2659,7 @@ function editHistPedido(idx) {
     { key:'unidade',   label:'Unidade', value:p.unidade },
     { key:'preco',     label:'Preço Unitário (R$)', type:'number', step:'0.01', value:p.preco },
     { key:'quantidade',label:'Quantidade', type:'number', step:'1', value:p.quantidade },
+    { key:'resp',      label:'Responsável', value:p.resp||'' },
     { key:'data',      label:'Data (dd/mm/aaaa)', value:p.data||'' },
     { key:'obs',       label:'Observação', value:p.obs||'' }
   ], function(data) {
@@ -2673,6 +2676,7 @@ function editHistPedido(idx) {
       unidade:     data.unidade,
       preco:       data.preco,
       quantidade:  data.quantidade,
+      resp:        data.resp,
       data:        data.data,
       obs:         data.obs
     });
