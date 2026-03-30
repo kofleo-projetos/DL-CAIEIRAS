@@ -1046,6 +1046,7 @@
             <th>Un.</th>
             <th style="text-align:right">R$ Unit.</th>
             <th style="text-align:right">Estq. Inicial</th>
+            <th style="text-align:right;color:#64a8e0">📦 Pedidos</th>
             <th style="text-align:right">Estq. Atual</th>
             <th style="text-align:right">Valor Atual (R$)</th>
             <th>Obs.</th>
@@ -1932,44 +1933,93 @@ function exportCongrPDF() {
 }
 
 // ══════════════════════════════════════════════
-// ESTOQUE
+// ESTOQUE — cálculo dinâmico via pedidos
 // ══════════════════════════════════════════════
+
+// Retorna mapa { descricao -> qtd_saida } somando todos os DATA.pedidos
+function calcSaidasPorProduto() {
+  var mapa = {};
+  DATA.pedidos.forEach(function(p) {
+    if(!p.descricao) return;
+    mapa[p.descricao] = (mapa[p.descricao] || 0) + (Number(p.quantidade) || 0);
+  });
+  return mapa;
+}
+
+// Recalcula estq_atual e val_atual de cada item com base nos pedidos reais
+function recalcularEstoque() {
+  var saidas = calcSaidasPorProduto();
+  DATA.estoque.forEach(function(e) {
+    var saida = saidas[e.descricao] || 0;
+    e.estq_atual = (e.estq_inicial || 0) - saida;
+    e.val_atual  = e.estq_atual * (e.preco || 0);
+    if(!e._comprar_manual) {
+      e.comprar = (e.estq_atual <= 0);
+    }
+  });
+}
+
 function buildEstoque() {
+  recalcularEstoque();
   document.getElementById('badge-est').textContent = DATA.estoque.length;
-  renderEstoque(DATA.estoque);
+  filterEstoque();
 }
 
 function renderEstoque(items) {
+  var saidas = calcSaidasPorProduto();
   document.getElementById('estoque-table').innerHTML = items.map(function(e) {
-    const neg = e.estq_atual < 0, low = e.comprar;
-    const cls = neg ? 'stock-negative' : (low ? 'stock-low' : (e.estq_atual > 0 ? 'stock-ok' : ''));
-    const badge = neg ? '<span class="badge badge-neg">⚠ Negativo</span>'
-                : low ? '<span class="badge badge-gold">Comprar</span>'
-                : e.estq_atual > 0 ? '<span class="badge badge-green">OK</span>'
-                : '<span class="badge">Zerado</span>';
-    const realIdx = DATA.estoque.indexOf(e);
-    return '<tr class="' + cls + '"><td class="td-bold">' + e.descricao + '</td><td><span class="badge badge-blue">' + e.unidade + '</span></td><td class="td-num">' + (e.preco > 0 ? R$(e.preco) : '—') + '</td><td class="td-num">' + N(e.estq_inicial) + '</td><td class="td-num" style="' + (neg?'color:var(--red);font-weight:700':'') + '">' + N(e.estq_atual) + '</td><td class="td-num" style="' + (e.val_atual < 0?'color:var(--red)':'') + '">' + (e.val_atual !== 0 ? R$(e.val_atual) : '—') + '</td><td>' + badge + (e.obs && e.obs !== 'COMPRAR' ? ' <small style="color:var(--text-muted)">' + e.obs + '</small>' : '') + '</td><td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;"><button class="btn-action btn-edit" onclick="editEstoque(' + realIdx + ')">✏️ Editar</button><button class="btn-action" style="background:#e6f7ee;color:var(--green);" onclick="entradaEstoque(' + realIdx + ')">📥 Entrada</button><button class="btn-action" style="background:#fde8e8;color:var(--red);" onclick="deleteEstoque(' + realIdx + ')">🗑️ Excluir</button></td></tr>';
+    var saida  = saidas[e.descricao] || 0;
+    var atual  = (e.estq_inicial || 0) - saida;
+    var neg    = atual < 0;
+    var cls    = neg ? 'stock-negative' : (e.comprar && atual > 0 ? 'stock-low' : (atual > 0 ? 'stock-ok' : ''));
+    var badge  = neg
+      ? '<span class="badge badge-neg">⚠ Negativo</span>'
+      : (e.comprar
+          ? '<span class="badge badge-gold">Comprar</span>'
+          : (atual > 0
+              ? '<span class="badge badge-green">OK</span>'
+              : '<span class="badge">Zerado</span>'));
+    var valAtual = atual * (e.preco || 0);
+    var realIdx  = DATA.estoque.indexOf(e);
+    return '<tr class="' + cls + '">' +
+      '<td class="td-bold">' + e.descricao + '</td>' +
+      '<td><span class="badge badge-blue">' + e.unidade + '</span></td>' +
+      '<td class="td-num">' + (e.preco > 0 ? R$(e.preco) : '—') + '</td>' +
+      '<td class="td-num">' + N(e.estq_inicial) + '</td>' +
+      '<td class="td-num" style="color:var(--blue);font-weight:700">' + N(saida) + '</td>' +
+      '<td class="td-num" style="' + (neg ? 'color:var(--red);font-weight:700' : '') + '">' + N(atual) + '</td>' +
+      '<td class="td-num" style="' + (valAtual < 0 ? 'color:var(--red)' : '') + '">' + (valAtual !== 0 ? R$(valAtual) : '—') + '</td>' +
+      '<td>' + badge + (e.obs && e.obs !== 'COMPRAR' ? ' <small style="color:var(--text-muted)">' + e.obs + '</small>' : '') + '</td>' +
+      '<td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap;">' +
+        '<button class="btn-action btn-edit" onclick="editEstoque(' + realIdx + ')">✏️ Editar</button>' +
+        '<button class="btn-action" style="background:#e6f7ee;color:var(--green);" onclick="entradaEstoque(' + realIdx + ')">📥 Entrada</button>' +
+        '<button class="btn-action" style="background:#fde8e8;color:var(--red);" onclick="deleteEstoque(' + realIdx + ')">🗑️ Excluir</button>' +
+      '</td>' +
+    '</tr>';
   }).join('');
 }
 
 function editEstoque(idx) {
   const e = DATA.estoque[idx];
   openEditModal('✏️ Editar — ' + e.descricao, [
-    { key:'descricao', label:'Descrição', value:e.descricao },
-    { key:'unidade',   label:'Unidade',   value:e.unidade },
-    { key:'preco',     label:'Preço Unitário (R$)', type:'number', step:'0.01', value:e.preco },
-    { key:'estq_inicial', label:'Estoque Inicial', type:'number', value:e.estq_inicial },
-    { key:'estq_atual',   label:'Estoque Atual',   type:'number', value:e.estq_atual },
-    { key:'obs', label:'Observação', value:e.obs||'' },
-    { key:'comprar', label:'Precisa Comprar?', type:'select', value:String(e.comprar),
+    { key:'descricao',    label:'Descrição',           value:e.descricao },
+    { key:'unidade',      label:'Unidade',             value:e.unidade },
+    { key:'preco',        label:'Preço Unitário (R$)', type:'number', step:'0.01', value:e.preco },
+    { key:'estq_inicial', label:'Estoque Inicial',     type:'number', value:e.estq_inicial },
+    { key:'obs',          label:'Observação',          value:e.obs||'' },
+    { key:'comprar',      label:'Forçar "Comprar"?',   type:'select', value:String(e.comprar),
       options:[{v:'false',l:'Não'},{v:'true',l:'Sim'}] }
   ], function(data) {
     Object.assign(DATA.estoque[idx], {
-      descricao:data.descricao, unidade:data.unidade, preco:data.preco,
-      estq_inicial:data.estq_inicial, estq_atual:data.estq_atual,
-      val_atual:data.preco * data.estq_atual, obs:data.obs,
-      comprar: data.comprar === 'true'
+      descricao:    data.descricao,
+      unidade:      data.unidade,
+      preco:        data.preco,
+      estq_inicial: data.estq_inicial,
+      obs:          data.obs,
+      comprar:      data.comprar === 'true',
+      _comprar_manual: data.comprar === 'true'
     });
+    recalcularEstoque();
     filterEstoque(); buildCompras(); buildDashboard();
     if(window.fbSave) window.fbSave();
     showToast('✅ Item atualizado!');
@@ -1977,13 +2027,15 @@ function editEstoque(idx) {
 }
 
 function filterEstoque() {
-  const q  = document.getElementById('search-est').value.toLowerCase();
-  const st = document.getElementById('filter-est-status').value;
-  let items = DATA.estoque.filter(e => e.descricao.toLowerCase().includes(q));
-  if (st === 'negativo') items = items.filter(e => e.estq_atual < 0);
-  else if (st === 'comprar') items = items.filter(e => e.comprar);
-  else if (st === 'ok')      items = items.filter(e => e.estq_atual > 0 && !e.comprar);
-  else if (st === 'zero')    items = items.filter(e => e.estq_atual === 0);
+  recalcularEstoque();
+  var saidas = calcSaidasPorProduto();
+  var q  = document.getElementById('search-est').value.toLowerCase();
+  var st = document.getElementById('filter-est-status').value;
+  var items = DATA.estoque.filter(function(e) { return e.descricao.toLowerCase().includes(q); });
+  if (st === 'negativo') items = items.filter(function(e) { return ((e.estq_inicial||0) - (saidas[e.descricao]||0)) < 0; });
+  else if (st === 'comprar') items = items.filter(function(e) { return e.comprar; });
+  else if (st === 'ok')      items = items.filter(function(e) { var a=(e.estq_inicial||0)-(saidas[e.descricao]||0); return a > 0 && !e.comprar; });
+  else if (st === 'zero')    items = items.filter(function(e) { return ((e.estq_inicial||0)-(saidas[e.descricao]||0)) === 0; });
   renderEstoque(items);
 }
 
@@ -1992,11 +2044,11 @@ function entradaEstoque(idx) {
   openEditModal('📥 Entrada de Estoque — ' + e.descricao, [
     { key:'quantidade', label:'Quantidade a Adicionar', type:'number', value:1, step:'1' }
   ], function(data) {
-    const qtd = Number(data.quantidade) || 0;
+    var qtd = Number(data.quantidade) || 0;
     if(qtd <= 0) { showToast('⚠️ Informe uma quantidade válida!'); return; }
-    DATA.estoque[idx].estq_atual += qtd;
-    DATA.estoque[idx].estq_inicial += qtd;
-    DATA.estoque[idx].val_atual = DATA.estoque[idx].preco * DATA.estoque[idx].estq_atual;
+    // Entrada aumenta o estoque inicial (o atual é calculado automaticamente)
+    DATA.estoque[idx].estq_inicial = (DATA.estoque[idx].estq_inicial || 0) + qtd;
+    recalcularEstoque();
     filterEstoque(); buildCompras(); buildDashboard();
     if(window.fbSave) window.fbSave();
     showToast('✅ Entrada de ' + qtd + ' unidade(s) registrada!');
@@ -2018,19 +2070,18 @@ function addNovoItemEstoque() {
     { key:'unidade',      label:'Unidade (ex: UN, CX)',value:'UN' },
     { key:'preco',        label:'Preço Unitário (R$)', type:'number', step:'0.01', value:0 },
     { key:'estq_inicial', label:'Estoque Inicial',     type:'number', value:0 },
-    { key:'estq_atual',   label:'Estoque Atual',       type:'number', value:0 },
     { key:'obs',          label:'Observação',          value:'' },
     { key:'comprar',      label:'Precisa Comprar?',    type:'select', value:'false',
       options:[{v:'false',l:'Não'},{v:'true',l:'Sim'}] }
   ], function(data) {
     if(!data.descricao.trim()) { showToast('⚠️ Informe a descrição do item!'); return; }
     DATA.estoque.push({
-      descricao: data.descricao.trim(),
-      unidade:   data.unidade.trim() || 'UN',
-      preco:     data.preco,
+      descricao:    data.descricao.trim(),
+      unidade:      data.unidade.trim() || 'UN',
+      preco:        data.preco,
       estq_inicial: data.estq_inicial,
-      estq_atual:   data.estq_atual,
-      val_atual:    data.preco * data.estq_atual,
+      estq_atual:   data.estq_inicial, // será recalculado
+      val_atual:    data.preco * data.estq_inicial,
       obs:          data.obs,
       comprar:      data.comprar === 'true'
     });
@@ -2226,6 +2277,8 @@ function confirmPedido(yes) {
   valid.forEach(function(r) {
     DATA.pedidos.push({ descricao:r.descricao, unidade:r.unidade, preco:r.preco,
       congregacao:casa, quantidade:r.quantidade, data:dataP, resp:resp, obs:obs });
+
+    // O estoque é recalculado automaticamente via calcSaidasPorProduto()
   });
 
   if(!DATA.congregacoes[casa]) DATA.congregacoes[casa] = { endereco:'', items:[], total_geral:0 };
@@ -2240,9 +2293,9 @@ function confirmPedido(yes) {
   document.getElementById('autoSummary').style.display = 'none';
   const bl = document.getElementById('blessingMsg');
   bl.style.display = 'block'; setTimeout(function(){ bl.style.display = 'none'; }, 3500);
-  buildDashboard(); buildCongregacoes(); buildHistorico();
+  buildDashboard(); buildCongregacoes(); buildHistorico(); buildEstoque(); buildCompras();
   if(window.fbSave) window.fbSave();
-  showToast('✅ Pedido registrado!');
+  showToast('✅ Pedido registrado e estoque atualizado!');
 }
 
 // ══════════════════════════════════════════════
@@ -2669,6 +2722,8 @@ function editHistPedido(idx) {
     const oldQtd  = p.quantidade;
     const oldTotal = (p.preco||0) * (p.quantidade||0);
 
+    // O estoque é recalculado automaticamente via calcSaidasPorProduto()
+
     // Atualiza o pedido
     DATA.pedidos[idx] = Object.assign({}, p, {
       congregacao: data.congregacao,
@@ -2686,8 +2741,9 @@ function editHistPedido(idx) {
     filterHistorico();
     buildCongregacoes();
     buildDashboard();
+    buildEstoque(); buildCompras();
     if(window.fbSave) window.fbSave();
-    showToast('✅ Pedido atualizado com sucesso!');
+    showToast('✅ Pedido atualizado e estoque ajustado!');
   });
 }
 
@@ -2695,13 +2751,15 @@ function deleteHistPedido(idx) {
   const p = DATA.pedidos[idx];
   if(!p) return;
   if(!confirm('Excluir este pedido?\n\n' + p.descricao + ' — ' + p.congregacao + ' (' + p.data + ')\n\nEsta ação não pode ser desfeita.')) return;
+  // O estoque é recalculado automaticamente após remover o pedido
   DATA.pedidos.splice(idx, 1);
   recalcularCongregacoesDosPedidos();
   filterHistorico();
   buildCongregacoes();
   buildDashboard();
+  buildEstoque(); buildCompras();
   if(window.fbSave) window.fbSave();
-  showToast('🗑️ Pedido excluído.');
+  showToast('🗑️ Pedido excluído e estoque restaurado.');
 }
 
 // Recalcula DATA.congregacoes completamente a partir de DATA.pedidos
